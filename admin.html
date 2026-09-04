@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Portfolio Content</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{ box-sizing:border-box; }
+  body{ font-family:sans-serif; background:#0A0A0F; color:#D7E2EA; max-width:760px; margin:0 auto; padding:2rem 1.25rem 5rem; }
+  h1{ font-size:1.5rem; margin-bottom:1.5rem; }
+  label{ display:block; font-size:.85rem; opacity:.7; margin:1.5rem 0 .4rem; }
+  input, textarea{
+    width:100%; background:#14131c; color:#D7E2EA; border:1px solid #333;
+    border-radius:8px; padding:.7rem; font-family:inherit; font-size:.9rem;
+  }
+  textarea{ min-height:220px; font-family:monospace; font-size:.8rem; }
+  button{
+    margin-top:1.5rem; background:#4F46E5; color:#fff; border:none;
+    border-radius:8px; padding:.75rem 1.5rem; font-size:.9rem; cursor:pointer;
+  }
+  button:hover{ opacity:.85; }
+  #status{ margin-top:1rem; font-size:.85rem; }
+  #login-box{ max-width:320px; margin:4rem auto; }
+</style>
+</head>
+<body>
+
+<div id="login-box">
+  <h1>Admin Login</h1>
+  <label>Email</label>
+  <input id="email" type="email" />
+  <label>Password</label>
+  <input id="password" type="password" />
+  <button onclick="login()">Log in</button>
+  <p id="login-status" style="margin-top:1rem; font-size:.85rem;"></p>
+</div>
+
+<div id="editor-box" style="display:none;">
+  <h1>Edit Portfolio Content</h1>
+
+  <label>Services (JSON)</label>
+  <textarea id="services-input"></textarea>
+
+  <label>Projects (JSON)</label>
+  <textarea id="projects-input"></textarea>
+
+  <button onclick="save()">Save changes</button>
+  <p id="status"></p>
+</div>
+
+<script>
+// Fill these in with the same values used in index.html
+const SUPABASE_URL = 'https://kyozprnqpzzrmyvtdxbu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_h7g2LDRQY_SeVyCF6lE6FA_F-Fws8E5';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function login(){
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const loginStatus = document.getElementById('login-status');
+  if(error){
+    loginStatus.textContent = error.message;
+  } else {
+    showEditor();
+  }
+}
+
+async function showEditor(){
+  document.getElementById('login-box').style.display = 'none';
+  document.getElementById('editor-box').style.display = 'block';
+
+  const { data } = await supabaseClient.from('content').select('services, projects').eq('id', 1).single();
+  if(data){
+    document.getElementById('services-input').value = JSON.stringify(data.services, null, 2);
+    document.getElementById('projects-input').value = JSON.stringify(data.projects, null, 2);
+  }
+}
+
+async function save(){
+  const statusEl = document.getElementById('status');
+  let services, projects;
+  try{
+    services = JSON.parse(document.getElementById('services-input').value);
+    projects = JSON.parse(document.getElementById('projects-input').value);
+  }catch(e){
+    statusEl.textContent = 'Invalid JSON — check for a missing comma or bracket.';
+    return;
+  }
+  const { error } = await supabaseClient.from('content').update({ services, projects }).eq('id', 1);
+  statusEl.textContent = error ? error.message : 'Saved. Refresh your site to see the changes.';
+}
+
+// If already logged in (session still active), skip straight to the editor
+supabaseClient.auth.getSession().then(({ data }) => {
+  if(data.session) showEditor();
+});
+</script>
+</body>
+</html>
