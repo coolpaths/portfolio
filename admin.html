@@ -7,21 +7,35 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *{ box-sizing:border-box; }
-  body{ font-family:sans-serif; background:#0A0A0F; color:#D7E2EA; max-width:760px; margin:0 auto; padding:2rem 1.25rem 5rem; }
-  h1{ font-size:1.5rem; margin-bottom:1.5rem; }
-  label{ display:block; font-size:.85rem; opacity:.7; margin:1.5rem 0 .4rem; }
-  input, textarea{
+  body{ font-family:sans-serif; background:#0A0A0F; color:#D7E2EA; max-width:900px; margin:0 auto; padding:2rem 1.25rem 6rem; }
+  h1{ font-size:1.5rem; margin-bottom:.5rem; }
+  h2{ font-size:1.1rem; margin:2.5rem 0 1rem; border-bottom:1px solid #333; padding-bottom:.5rem; }
+  label{ display:block; font-size:.8rem; opacity:.65; margin:1rem 0 .35rem; }
+  input[type=text], input[type=email], input[type=url], textarea{
     width:100%; background:#14131c; color:#D7E2EA; border:1px solid #333;
-    border-radius:8px; padding:.7rem; font-family:inherit; font-size:.9rem;
+    border-radius:8px; padding:.6rem .7rem; font-family:inherit; font-size:.9rem;
   }
-  textarea{ min-height:220px; font-family:monospace; font-size:.8rem; }
+  textarea{ min-height:90px; resize:vertical; }
   button{
-    margin-top:1.5rem; background:#4F46E5; color:#fff; border:none;
-    border-radius:8px; padding:.75rem 1.5rem; font-size:.9rem; cursor:pointer;
+    background:#4F46E5; color:#fff; border:none; border-radius:8px;
+    padding:.6rem 1.1rem; font-size:.85rem; cursor:pointer; margin-top:.5rem;
   }
+  button.secondary{ background:#262533; }
+  button.danger{ background:#7f1d1d; }
   button:hover{ opacity:.85; }
-  #status{ margin-top:1rem; font-size:.85rem; }
+  .card{ background:#121119; border:1px solid #2a2938; border-radius:10px; padding:1rem 1.1rem; margin-bottom:1rem; }
+  .row{ display:flex; gap:.75rem; flex-wrap:wrap; }
+  .row > *{ flex:1; min-width:140px; }
+  .img-slot{ display:flex; align-items:center; gap:.6rem; margin-top:.5rem; }
+  .img-slot img{ width:56px; height:56px; object-fit:cover; border-radius:6px; background:#222; flex:none; }
+  .img-slot input[type=file]{ font-size:.75rem; flex:1; }
+  .card-actions{ margin-top:.75rem; display:flex; gap:.5rem; }
+  #status{ margin-top:1.5rem; font-size:.85rem; }
   #login-box{ max-width:320px; margin:4rem auto; }
+  #save-bar{
+    position:sticky; bottom:0; background:#0A0A0F; border-top:1px solid #333;
+    padding:1rem 0; margin-top:2rem;
+  }
 </style>
 </head>
 <body>
@@ -31,7 +45,7 @@
   <label>Email</label>
   <input id="email" type="email" />
   <label>Password</label>
-  <input id="password" type="password" />
+  <input id="password" type="text" style="-webkit-text-security:disc;" />
   <button onclick="login()">Log in</button>
   <p id="login-status" style="margin-top:1rem; font-size:.85rem;"></p>
 </div>
@@ -39,63 +53,220 @@
 <div id="editor-box" style="display:none;">
   <h1>Edit Portfolio Content</h1>
 
-  <label>Services (JSON)</label>
-  <textarea id="services-input"></textarea>
+  <h2>Navigation</h2>
+  <div id="nav-list"></div>
+  <button class="secondary" onclick="addNav()">+ Add nav link</button>
 
-  <label>Projects (JSON)</label>
-  <textarea id="projects-input"></textarea>
+  <h2>Home / Hero</h2>
+  <label>Heading</label>
+  <input type="text" id="hero-heading" />
+  <label>Tagline</label>
+  <input type="text" id="hero-tagline" />
 
-  <button onclick="save()">Save changes</button>
-  <p id="status"></p>
+  <h2>About</h2>
+  <label>About text</label>
+  <textarea id="about-text" style="min-height:140px;"></textarea>
+
+  <h2>Services</h2>
+  <div id="services-list"></div>
+  <button class="secondary" onclick="addService()">+ Add service</button>
+
+  <h2>Portfolio Projects</h2>
+  <div id="projects-list"></div>
+  <button class="secondary" onclick="addProject()">+ Add project</button>
+
+  <h2>Contact</h2>
+  <label>Email</label>
+  <input type="email" id="contact-email" />
+  <label>Phone numbers</label>
+  <div id="phones-list"></div>
+  <button class="secondary" onclick="addPhone()">+ Add phone</button>
+  <label style="margin-top:1.5rem;">Social links</label>
+  <div id="socials-list"></div>
+  <button class="secondary" onclick="addSocial()">+ Add social link</button>
+
+  <h2>Footer</h2>
+  <label>Footer text</label>
+  <input type="text" id="footer-text" />
+
+  <div id="save-bar">
+    <button onclick="save()">Save all changes</button>
+    <p id="status"></p>
+  </div>
 </div>
 
 <script>
-// Fill these in with the same values used in index.html
 const SUPABASE_URL = 'https://kyozprnqpzzrmyvtdxbu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_h7g2LDRQY_SeVyCF6lE6FA_F-Fws8E5';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+let state = {
+  nav: [], hero: {heading:'', tagline:''}, about: '',
+  services: [], projects: [],
+  contact: { email:'', phones:[], socials:[] },
+  footer: ''
+};
+
+/* ---------- auth ---------- */
 async function login(){
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   const loginStatus = document.getElementById('login-status');
-  if(error){
-    loginStatus.textContent = error.message;
-  } else {
-    showEditor();
-  }
+  if(error){ loginStatus.textContent = error.message; }
+  else { showEditor(); }
 }
+supabaseClient.auth.getSession().then(({ data }) => { if(data.session) showEditor(); });
 
 async function showEditor(){
   document.getElementById('login-box').style.display = 'none';
   document.getElementById('editor-box').style.display = 'block';
 
-  const { data } = await supabaseClient.from('content').select('services, projects').eq('id', 1).single();
+  const { data } = await supabaseClient.from('content').select('*').eq('id', 1).single();
   if(data){
-    document.getElementById('services-input').value = JSON.stringify(data.services, null, 2);
-    document.getElementById('projects-input').value = JSON.stringify(data.projects, null, 2);
+    if(data.nav) state.nav = data.nav;
+    if(data.hero) state.hero = data.hero;
+    if(data.about) state.about = data.about;
+    if(data.services) state.services = data.services;
+    if(data.projects) state.projects = data.projects;
+    if(data.contact) state.contact = data.contact;
+    if(data.footer) state.footer = data.footer;
+  }
+  document.getElementById('hero-heading').value = state.hero.heading || '';
+  document.getElementById('hero-tagline').value = state.hero.tagline || '';
+  document.getElementById('about-text').value = state.about || '';
+  document.getElementById('contact-email').value = state.contact.email || '';
+  document.getElementById('footer-text').value = state.footer || '';
+
+  renderNav(); renderServices(); renderProjects(); renderPhones(); renderSocials();
+}
+
+/* ---------- image upload ---------- */
+async function uploadImage(file){
+  const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
+  const { error } = await supabaseClient.storage.from('portfolio-images').upload(path, file);
+  if(error) throw error;
+  const { data } = supabaseClient.storage.from('portfolio-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/* ---------- nav ---------- */
+function renderNav(){
+  document.getElementById('nav-list').innerHTML = state.nav.map((n,i)=>`
+    <div class="card row">
+      <div><label>Label</label><input type="text" value="${escAttr(n.label)}" onchange="state.nav[${i}].label=this.value"></div>
+      <div><label>Link (e.g. #about)</label><input type="text" value="${escAttr(n.href)}" onchange="state.nav[${i}].href=this.value"></div>
+      <div style="flex:none; align-self:flex-end;"><button class="danger" onclick="removeNav(${i})">Delete</button></div>
+    </div>
+  `).join('');
+}
+function addNav(){ state.nav.push({label:'New Link', href:'#'}); renderNav(); }
+function removeNav(i){ state.nav.splice(i,1); renderNav(); }
+
+/* ---------- services ---------- */
+function renderServices(){
+  document.getElementById('services-list').innerHTML = state.services.map((s,i)=>`
+    <div class="card">
+      <label>Name</label>
+      <input type="text" value="${escAttr(s.name)}" onchange="state.services[${i}].name=this.value">
+      <label>Description</label>
+      <textarea onchange="state.services[${i}].desc=this.value">${escHtml(s.desc)}</textarea>
+      <div class="card-actions"><button class="danger" onclick="removeService(${i})">Delete</button></div>
+    </div>
+  `).join('');
+}
+function addService(){ state.services.push({num:'', name:'New Service', desc:''}); renderServices(); }
+function removeService(i){ state.services.splice(i,1); renderServices(); }
+
+/* ---------- projects ---------- */
+function renderProjects(){
+  document.getElementById('projects-list').innerHTML = state.projects.map((p,i)=>`
+    <div class="card">
+      <div class="row">
+        <div><label>Category</label><input type="text" value="${escAttr(p.category)}" onchange="state.projects[${i}].category=this.value"></div>
+        <div><label>Name</label><input type="text" value="${escAttr(p.name)}" onchange="state.projects[${i}].name=this.value"></div>
+      </div>
+      <label>Description</label>
+      <textarea onchange="state.projects[${i}].desc=this.value">${escHtml(p.desc)}</textarea>
+      <label>Images</label>
+      ${['col1a','col1b','col2'].map(key=>`
+        <div class="img-slot">
+          <img src="${p[key] || ''}" onerror="this.style.visibility='hidden'">
+          <input type="file" accept="image/*" onchange="handleProjectImage(event, ${i}, '${key}')">
+        </div>
+      `).join('')}
+      <div class="card-actions"><button class="danger" onclick="removeProject(${i})">Delete project</button></div>
+    </div>
+  `).join('');
+}
+function addProject(){
+  state.projects.push({num:'', category:'', name:'New Project', desc:'', col1a:'', col1b:'', col2:''});
+  renderProjects();
+}
+function removeProject(i){ state.projects.splice(i,1); renderProjects(); }
+async function handleProjectImage(e, i, key){
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Uploading image...';
+  try{
+    const url = await uploadImage(file);
+    state.projects[i][key] = url;
+    renderProjects();
+    statusEl.textContent = 'Image uploaded — click "Save all changes" to publish.';
+  }catch(err){
+    statusEl.textContent = 'Upload failed: ' + err.message;
   }
 }
 
+/* ---------- contact ---------- */
+function renderPhones(){
+  document.getElementById('phones-list').innerHTML = state.contact.phones.map((p,i)=>`
+    <div class="row">
+      <input type="text" value="${escAttr(p)}" onchange="state.contact.phones[${i}]=this.value">
+      <div style="flex:none;"><button class="danger" onclick="removePhone(${i})">Delete</button></div>
+    </div>
+  `).join('');
+}
+function addPhone(){ state.contact.phones.push('+251'); renderPhones(); }
+function removePhone(i){ state.contact.phones.splice(i,1); renderPhones(); }
+
+function renderSocials(){
+  document.getElementById('socials-list').innerHTML = state.contact.socials.map((s,i)=>`
+    <div class="row">
+      <input type="text" placeholder="Label" value="${escAttr(s.label)}" onchange="state.contact.socials[${i}].label=this.value">
+      <input type="text" placeholder="URL" value="${escAttr(s.url)}" onchange="state.contact.socials[${i}].url=this.value">
+      <div style="flex:none;"><button class="danger" onclick="removeSocial(${i})">Delete</button></div>
+    </div>
+  `).join('');
+}
+function addSocial(){ state.contact.socials.push({label:'New', url:'#'}); renderSocials(); }
+function removeSocial(i){ state.contact.socials.splice(i,1); renderSocials(); }
+
+/* ---------- save ---------- */
 async function save(){
   const statusEl = document.getElementById('status');
-  let services, projects;
-  try{
-    services = JSON.parse(document.getElementById('services-input').value);
-    projects = JSON.parse(document.getElementById('projects-input').value);
-  }catch(e){
-    statusEl.textContent = 'Invalid JSON — check for a missing comma or bracket.';
-    return;
-  }
-  const { error } = await supabaseClient.from('content').update({ services, projects }).eq('id', 1);
+  state.hero.heading = document.getElementById('hero-heading').value;
+  state.hero.tagline = document.getElementById('hero-tagline').value;
+  state.about = document.getElementById('about-text').value;
+  state.contact.email = document.getElementById('contact-email').value;
+  state.footer = document.getElementById('footer-text').value;
+
+  state.services.forEach((s,i)=> s.num = String(i+1).padStart(2,'0'));
+  state.projects.forEach((p,i)=> p.num = String(i+1).padStart(2,'0'));
+
+  statusEl.textContent = 'Saving...';
+  const { error } = await supabaseClient.from('content').update({
+    nav: state.nav, hero: state.hero, about: state.about,
+    services: state.services, projects: state.projects,
+    contact: state.contact, footer: state.footer
+  }).eq('id', 1);
   statusEl.textContent = error ? error.message : 'Saved. Refresh your site to see the changes.';
 }
 
-// If already logged in (session still active), skip straight to the editor
-supabaseClient.auth.getSession().then(({ data }) => {
-  if(data.session) showEditor();
-});
+/* ---------- helpers ---------- */
+function escAttr(str){ return (str||'').replace(/"/g,'&quot;'); }
+function escHtml(str){ return (str||'').replace(/</g,'&lt;'); }
 </script>
 </body>
 </html>
