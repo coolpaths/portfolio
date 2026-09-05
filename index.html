@@ -96,7 +96,7 @@
 
   /* ================= HERO ================= */
   .hero{
-    height:100vh; display:flex; flex-direction:column;
+    min-height:100vh; display:flex; flex-direction:column;
     overflow-x:clip; position:relative;
   }
   .navbar{
@@ -334,11 +334,18 @@
     text-transform:uppercase; letter-spacing:.2em; background:#0A0A0F;
   }
 
-  .home-video-section{ padding:2rem 1.25rem; background:#0A0A0F; }
-  @media (min-width:768px){ .home-video-section{ padding:3rem 2rem; } }
+  .home-video-wrap{ padding:0 1.5rem; margin:1.25rem 0; }
+  .home-video-wrap video{
+    width:100%; max-width:640px; margin:0 auto; display:block;
+    border-radius:20px; background:#000; aspect-ratio:16/9; object-fit:cover;
+  }
+  @media (min-width:768px){ .home-video-wrap{ padding:0 2.5rem; margin:1.75rem 0; } }
 
   /* ================= SMALL PHONES ================= */
   @media (max-width:480px){
+    .hero-heading-wrap{ text-align:center; }
+    .hero-bottom{ flex-direction:column; align-items:center; text-align:center; gap:1.1rem; }
+    .hero-bottom p{ text-align:center; max-width:280px; }
     .marquee-row img{ width:220px; height:150px; }
     .project-grid{ flex-direction:column; }
     .project-col1{ width:100%; flex-direction:row; }
@@ -350,8 +357,33 @@
     .project-card{ padding:1.25rem; }
     .contact-details{ gap:1rem; }
     .btn-contact, .btn-live{ padding:.7rem 1.5rem; font-size:.75rem; }
-    .home-video-section video{ border-radius:12px; }
+    .home-video-wrap video{ border-radius:14px; }
   }
+
+  /* ================= POLISH ANIMATIONS ================= */
+  @keyframes floatY{
+    0%, 100%{ transform:translateY(0); }
+    50%{ transform:translateY(-10px); }
+  }
+  .about-deco{ animation:floatY 4.5s ease-in-out infinite; }
+  .deco-p59, .deco-group{ animation-delay:.8s; }
+
+  @keyframes pulseGlow{
+    0%, 100%{ box-shadow:0 0 0 0 rgba(79,70,229,.45); }
+    50%{ box-shadow:0 0 0 10px rgba(79,70,229,0); }
+  }
+  .btn-contact{ animation:pulseGlow 2.6s ease-out infinite; }
+
+  .navbar a{ position:relative; }
+  .navbar a::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:1px;
+    background:currentColor; transition:width .25s ease;
+  }
+  .navbar a:hover::after{ width:100%; }
+
+  .service-item, .project-card{ transition:transform .3s ease; }
+  .service-item:hover{ transform:translateX(4px); }
+  .project-card:hover{ transform:translateY(-4px); }
 </style>
 </head>
 <body>
@@ -370,17 +402,17 @@
     <div class="hero-heading-wrap fade-in" style="--fdelay:.15s; --fy:40px;">
       <h1 class="hero-heading" id="hero-heading-el">Hi, I&apos;m Kool</h1>
     </div>
+
+    <div class="home-video-wrap fade-in" id="home-video-section" style="display:none; --fdelay:.25s; --fy:20px;">
+      <video id="home-video" controls playsinline></video>
+    </div>
+
     <div class="hero-bottom">
           <p class="fade-in hero-tagline" id="hero-tagline-el" style="--fdelay:.35s; --fy:20px;">turning strategy into growth — powered by data, creativity, and AI</p>
       <div class="fade-in" style="--fdelay:.5s; --fy:20px;">
         <button class="btn-contact" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Me</button>
       </div>
     </div>
-  </section>
-
-  <!-- ================= HOME VIDEO ================= -->
-  <section class="home-video-section" id="home-video-section" style="display:none;">
-    <video id="home-video" controls playsinline style="width:100%; max-width:900px; margin:0 auto; display:block; border-radius:20px;"></video>
   </section>
 
   <!-- ================= MARQUEE ================= -->
