@@ -96,9 +96,11 @@
 
   /* ================= HERO ================= */
   .hero{
-    min-height:100vh; display:flex; flex-direction:column;
+    display:flex; flex-direction:column;
     overflow-x:clip; position:relative;
+    padding-bottom:2.5rem;
   }
+  @media (min-width:768px){ .hero{ padding-bottom:3rem; } }
   .navbar{
     display:flex; justify-content:space-between;
     padding:1.5rem 1.5rem 0; z-index:20; position:relative;
@@ -141,10 +143,9 @@
 
   .hero-bottom{
     display:flex; justify-content:space-between; align-items:flex-end;
-    padding:0 1.5rem 1.75rem; position:relative; z-index:20; margin-top:auto;
+    padding:0 1.5rem; position:relative; z-index:20; margin-top:2rem;
   }
-  @media (min-width:768px){ .hero-bottom{ padding:0 2.5rem 2.5rem; } }
-  @media (min-width:640px){ .hero-bottom{ padding-bottom:2rem; } }
+  @media (min-width:768px){ .hero-bottom{ padding:0 2.5rem; margin-top:2.5rem; } }
   .hero-bottom p{
     color:var(--ink); font-weight:300; text-transform:uppercase; letter-spacing:.05em;
     line-height:1.3; font-size:clamp(0.75rem,1.4vw,1.5rem);
@@ -183,22 +184,19 @@
   }
   @media (min-width:640px){ .about{ padding:5rem 2rem; } }
   @media (min-width:768px){ .about{ padding:5rem 2.5rem; } }
-  .about-deco{ position:absolute; z-index:0; }
-  .deco-moon{ top:4%; left:1%; width:120px; }
-  .deco-p59{ bottom:8%; left:3%; width:100px; }
-  .deco-lego{ top:4%; right:1%; width:120px; }
-  .deco-group{ bottom:8%; right:3%; width:130px; }
+  .about-deco{ position:absolute; z-index:0; display:none; }
   @media (min-width:640px){
-    .deco-moon,.deco-lego{ width:160px; }
-    .deco-p59{ width:140px; left:6%; }
-    .deco-group{ width:170px; right:6%; }
-    .deco-moon{ left:2%; } .deco-lego{ right:2%; }
+    .about-deco{ display:block; }
+    .deco-moon{ top:4%; left:2%; width:160px; }
+    .deco-p59{ bottom:8%; left:6%; width:140px; }
+    .deco-lego{ top:4%; right:2%; width:160px; }
+    .deco-group{ bottom:8%; right:6%; width:170px; }
   }
   @media (min-width:768px){
-    .deco-moon,.deco-lego{ width:210px; }
-    .deco-p59{ width:180px; left:10%; }
-    .deco-group{ width:220px; right:10%; }
-    .deco-moon{ left:4%; } .deco-lego{ right:4%; }
+    .deco-moon{ left:4%; width:210px; }
+    .deco-p59{ left:10%; width:180px; }
+    .deco-lego{ right:4%; width:210px; }
+    .deco-group{ right:10%; width:220px; }
   }
   .section-heading{
     font-weight:900; text-transform:uppercase; line-height:0.9; letter-spacing:-0.02em;
