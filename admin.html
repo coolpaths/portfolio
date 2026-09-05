@@ -63,6 +63,11 @@
   <label>Tagline</label>
   <input type="text" id="hero-tagline" />
 
+  <h2>Home Video (plays right after "Hi, I'm Kool")</h2>
+  <div id="home-video-preview"></div>
+  <input type="file" accept="video/*" onchange="handleHomeVideo(event)">
+  <button class="secondary" onclick="removeHomeVideo()">Remove video</button>
+
   <h2>Gallery (horizontal image slider, shown right after Home)</h2>
   <div id="gallery-list"></div>
   <button class="secondary" onclick="addGalleryImage()">+ Add image</button>
@@ -105,7 +110,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_h7g2LDRQY_SeVyCF6lE6FA_F-Fws8E5';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let state = {
-  nav: [], hero: {heading:'', tagline:''}, about: '', gallery: [],
+  nav: [], hero: {heading:'', tagline:''}, homeVideo: '', about: '', gallery: [],
   services: [], projects: [],
   contact: { email:'', phones:[], socials:[] },
   footer: ''
@@ -130,6 +135,7 @@ async function showEditor(){
   if(data){
     if(data.nav) state.nav = data.nav;
     if(data.hero) state.hero = data.hero;
+    if(data.home_video) state.homeVideo = data.home_video;
     if(data.about) state.about = data.about;
     if(data.gallery) state.gallery = data.gallery;
     if(data.services) state.services = data.services;
@@ -143,17 +149,40 @@ async function showEditor(){
   document.getElementById('contact-email').value = state.contact.email || '';
   document.getElementById('footer-text').value = state.footer || '';
 
-  renderNav(); renderGallery(); renderServices(); renderProjects(); renderPhones(); renderSocials();
+  renderNav(); renderHomeVideo(); renderGallery(); renderServices(); renderProjects(); renderPhones(); renderSocials();
 }
 
-/* ---------- image upload ---------- */
-async function uploadImage(file){
+/* ---------- file upload (images or video) ---------- */
+async function uploadFile(file){
   const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
   const { error } = await supabaseClient.storage.from('portfolio-images').upload(path, file);
   if(error) throw error;
   const { data } = supabaseClient.storage.from('portfolio-images').getPublicUrl(path);
   return data.publicUrl;
 }
+const uploadImage = uploadFile; // kept for compatibility with existing calls below
+
+/* ---------- home video ---------- */
+function renderHomeVideo(){
+  document.getElementById('home-video-preview').innerHTML = state.homeVideo
+    ? `<video src="${state.homeVideo}" controls style="width:100%; max-width:420px; border-radius:10px; display:block; margin-bottom:.5rem;"></video>`
+    : `<p style="opacity:.5; font-size:.85rem;">No video uploaded yet.</p>`;
+}
+async function handleHomeVideo(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Uploading video...';
+  try{
+    const url = await uploadFile(file);
+    state.homeVideo = url;
+    renderHomeVideo();
+    statusEl.textContent = 'Video uploaded — click "Save all changes" to publish.';
+  }catch(err){
+    statusEl.textContent = 'Upload failed: ' + err.message;
+  }
+}
+function removeHomeVideo(){ state.homeVideo = ''; renderHomeVideo(); }
 
 /* ---------- nav ---------- */
 function renderNav(){
@@ -172,7 +201,7 @@ function removeNav(i){ state.nav.splice(i,1); renderNav(); }
 function renderGallery(){
   document.getElementById('gallery-list').innerHTML = state.gallery.map((url,i)=>`
     <div class="img-slot">
-      <img src="${url || ''}" onerror="this.style.visibility='hidden'">
+      ${mediaPreview(url)}
       <input type="file" accept="image/*" onchange="handleGalleryImage(event, ${i})">
       <button class="danger" onclick="removeGalleryImage(${i})">Delete</button>
     </div>
@@ -225,8 +254,8 @@ function renderProjects(){
       <label>Images</label>
       ${['col1a','col1b','col2'].map(key=>`
         <div class="img-slot">
-          <img src="${p[key] || ''}" onerror="this.style.visibility='hidden'">
-          <input type="file" accept="image/*" onchange="handleProjectImage(event, ${i}, '${key}')">
+          ${mediaPreview(p[key])}
+          <input type="file" accept="image/*,video/*" onchange="handleProjectImage(event, ${i}, '${key}')">
         </div>
       `).join('')}
       <div class="card-actions"><button class="danger" onclick="removeProject(${i})">Delete project</button></div>
@@ -291,7 +320,7 @@ async function save(){
 
   statusEl.textContent = 'Saving...';
   const { error } = await supabaseClient.from('content').update({
-    nav: state.nav, hero: state.hero, about: state.about, gallery: state.gallery,
+    nav: state.nav, hero: state.hero, home_video: state.homeVideo, about: state.about, gallery: state.gallery,
     services: state.services, projects: state.projects,
     contact: state.contact, footer: state.footer
   }).eq('id', 1);
@@ -301,6 +330,13 @@ async function save(){
 /* ---------- helpers ---------- */
 function escAttr(str){ return (str||'').replace(/"/g,'&quot;'); }
 function escHtml(str){ return (str||'').replace(/</g,'&lt;'); }
+function isVideoUrl(url){ return /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url || ''); }
+function mediaPreview(url){
+  if(!url) return `<div style="width:56px;height:56px;border-radius:6px;background:#222;flex:none;"></div>`;
+  return isVideoUrl(url)
+    ? `<video src="${url}" muted style="width:56px;height:56px;object-fit:cover;border-radius:6px;background:#222;flex:none;"></video>`
+    : `<img src="${url}" onerror="this.style.visibility='hidden'">`;
+}
 </script>
 </body>
 </html>

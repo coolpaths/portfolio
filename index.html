@@ -286,11 +286,11 @@
   .project-grid{ display:flex; gap:.75rem; }
   .project-col1{ width:40%; display:flex; flex-direction:column; gap:.75rem; }
   .project-col2{ width:60%; }
-  .project-col1 img:first-child{ height:clamp(130px,16vw,230px); width:100%; object-fit:cover; border-radius:40px; }
-  .project-col1 img:last-child{ height:clamp(160px,22vw,340px); width:100%; object-fit:cover; border-radius:40px; }
-  .project-col2 img{ height:100%; width:100%; object-fit:cover; border-radius:40px; min-height:300px; }
-  @media (min-width:640px){ .project-col1 img, .project-col2 img{ border-radius:50px; } }
-  @media (min-width:768px){ .project-col1 img, .project-col2 img{ border-radius:60px; } }
+  .project-col1 img:first-child, .project-col1 video:first-child{ height:clamp(130px,16vw,230px); width:100%; object-fit:cover; border-radius:40px; }
+  .project-col1 img:last-child, .project-col1 video:last-child{ height:clamp(160px,22vw,340px); width:100%; object-fit:cover; border-radius:40px; }
+  .project-col2 img, .project-col2 video{ height:100%; width:100%; object-fit:cover; border-radius:40px; min-height:300px; }
+  @media (min-width:640px){ .project-col1 img, .project-col2 img, .project-col1 video, .project-col2 video{ border-radius:50px; } }
+  @media (min-width:768px){ .project-col1 img, .project-col2 img, .project-col1 video, .project-col2 video{ border-radius:60px; } }
 
   /* ================= CONTACT ================= */
   .contact-section{
@@ -334,18 +334,23 @@
     text-transform:uppercase; letter-spacing:.2em; background:#0A0A0F;
   }
 
+  .home-video-section{ padding:2rem 1.25rem; background:#0A0A0F; }
+  @media (min-width:768px){ .home-video-section{ padding:3rem 2rem; } }
+
   /* ================= SMALL PHONES ================= */
   @media (max-width:480px){
     .marquee-row img{ width:220px; height:150px; }
     .project-grid{ flex-direction:column; }
     .project-col1{ width:100%; flex-direction:row; }
-    .project-col1 img{ width:50%; }
+    .project-col1 img, .project-col1 video{ width:50%; }
     .project-col2{ width:100%; }
-    .project-col1 img:first-child, .project-col1 img:last-child{ height:140px; }
-    .project-col2 img{ min-height:180px; }
+    .project-col1 img:first-child, .project-col1 img:last-child,
+    .project-col1 video:first-child, .project-col1 video:last-child{ height:140px; }
+    .project-col2 img, .project-col2 video{ min-height:180px; }
     .project-card{ padding:1.25rem; }
     .contact-details{ gap:1rem; }
     .btn-contact, .btn-live{ padding:.7rem 1.5rem; font-size:.75rem; }
+    .home-video-section video{ border-radius:12px; }
   }
 </style>
 </head>
@@ -371,6 +376,11 @@
         <button class="btn-contact" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Me</button>
       </div>
     </div>
+  </section>
+
+  <!-- ================= HOME VIDEO ================= -->
+  <section class="home-video-section" id="home-video-section" style="display:none;">
+    <video id="home-video" controls playsinline style="width:100%; max-width:900px; margin:0 auto; display:block; border-radius:20px;"></video>
   </section>
 
   <!-- ================= MARQUEE ================= -->
@@ -611,6 +621,16 @@ function renderServices(services){
   document.querySelectorAll('.services-list .fade-in').forEach(el=>fadeObserver.observe(el));
 }
 
+function isVideoUrl(url){
+  return /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url || '');
+}
+function mediaTag(url, alt){
+  if(!url) return '';
+  return isVideoUrl(url)
+    ? `<video src="${url}" autoplay muted loop playsinline></video>`
+    : `<img src="${url}" alt="${alt}" loading="lazy" />`;
+}
+
 function renderProjects(projects){
   totalCards = projects.length;
   stackEl.innerHTML = projects.map((p,i)=>`
@@ -627,11 +647,11 @@ function renderProjects(projects){
         <p class="project-desc">${p.desc}</p>
         <div class="project-grid">
           <div class="project-col1">
-            <img src="${p.col1a}" alt="${p.name} detail 1" loading="lazy" />
-            <img src="${p.col1b}" alt="${p.name} detail 2" loading="lazy" />
+            ${mediaTag(p.col1a, p.name + ' detail 1')}
+            ${mediaTag(p.col1b, p.name + ' detail 2')}
           </div>
           <div class="project-col2">
-            <img src="${p.col2}" alt="${p.name} hero" loading="lazy" />
+            ${mediaTag(p.col2, p.name + ' hero')}
           </div>
         </div>
       </div>
@@ -657,7 +677,7 @@ async function loadContent(){
   let services = servicesDefault;
   let projects = projectsDefault;
   let gallery = galleryDefault;
-  let nav = null, hero = null, about = null, contact = null, footer = null;
+  let nav = null, hero = null, about = null, contact = null, footer = null, data_homeVideo = null;
   try{
     const { data } = await supabaseClient.from('content').select('*').eq('id', 1).single();
     if(data){
@@ -665,6 +685,7 @@ async function loadContent(){
       if(data.projects && data.projects.length) projects = data.projects;
       if(data.gallery && data.gallery.length) gallery = data.gallery;
       nav = data.nav; hero = data.hero; about = data.about; contact = data.contact; footer = data.footer;
+      data_homeVideo = data.home_video;
     }
   }catch(e){ /* Supabase not set up yet, or table empty — using defaults */ }
 
@@ -677,6 +698,10 @@ async function loadContent(){
   if(hero){
     if(hero.heading) document.getElementById('hero-heading-el').textContent = hero.heading;
     if(hero.tagline) document.getElementById('hero-tagline-el').textContent = hero.tagline;
+  }
+  if(data_homeVideo){
+    document.getElementById('home-video').src = data_homeVideo;
+    document.getElementById('home-video-section').style.display = 'block';
   }
   if(footer){
     document.getElementById('site-footer').textContent = footer;
