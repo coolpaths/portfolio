@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Admin — Portfolio Content</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
 <style>
   *{ box-sizing:border-box; }
   body{ font-family:sans-serif; background:#0A0A0F; color:#D7E2EA; max-width:900px; margin:0 auto; padding:2rem 1.25rem 6rem; }
@@ -31,6 +32,11 @@
   .img-slot input[type=file]{ font-size:.75rem; flex:1; }
   .card-actions{ margin-top:.75rem; display:flex; gap:.5rem; }
   #status{ margin-top:1.5rem; font-size:.85rem; }
+  .upload-progress{
+    height:6px; background:#222; border-radius:4px; overflow:hidden;
+    margin-top:.4rem; display:none;
+  }
+  .upload-progress-bar{ height:100%; background:#4F46E5; width:0%; transition:width .2s ease; }
   #login-box{ max-width:320px; margin:4rem auto; }
   #save-bar{
     position:sticky; bottom:0; background:#0A0A0F; border-top:1px solid #333;
@@ -101,6 +107,7 @@
   <div id="save-bar">
     <button onclick="save()">Save all changes</button>
     <p id="status"></p>
+    <div class="upload-progress" id="upload-progress"><div class="upload-progress-bar" id="upload-progress-bar"></div></div>
   </div>
 </div>
 
@@ -152,15 +159,66 @@ async function showEditor(){
   renderNav(); renderHomeVideo(); renderGallery(); renderServices(); renderProjects(); renderPhones(); renderSocials();
 }
 
-/* ---------- file upload (images or video) ---------- */
-async function uploadFile(file){
+/* ---------- file upload (images, video, or audio) — resumable, with progress ---------- */
+function showUploadProgress(pct){
+  const bar = document.getElementById('upload-progress');
+  const fill = document.getElementById('upload-progress-bar');
+  bar.style.display = 'block';
+  fill.style.width = pct + '%';
+}
+function hideUploadProgress(){
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('upload-progress-bar').style.width = '0%';
+}
+async function uploadFile(file, onProgress){
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData.session.access_token;
   const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
-  const { error } = await supabaseClient.storage.from('portfolio-images').upload(path, file);
-  if(error) throw error;
-  const { data } = supabaseClient.storage.from('portfolio-images').getPublicUrl(path);
-  return data.publicUrl;
+  return new Promise((resolve, reject)=>{
+    const upload = new tus.Upload(file, {
+      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000],
+      headers: { authorization: `Bearer ${token}`, 'x-upsert': 'false' },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: 'portfolio-images',
+        objectName: path,
+        contentType: file.type || 'application/octet-stream',
+        cacheControl: '3600',
+      },
+      chunkSize: 6 * 1024 * 1024, // required by Supabase's resumable endpoint
+      onError: (error) => reject(error),
+      onProgress: (sent, total) => {
+        if(onProgress) onProgress(Math.round((sent / total) * 100));
+      },
+      onSuccess: () => {
+        const { data } = supabaseClient.storage.from('portfolio-images').getPublicUrl(path);
+        resolve(data.publicUrl);
+      },
+    });
+    upload.start();
+  });
 }
 const uploadImage = uploadFile; // kept for compatibility with existing calls below
+
+async function runUpload(file, onDone){
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = `Uploading ${file.name}...`;
+  showUploadProgress(0);
+  try{
+    const url = await uploadFile(file, pct => showUploadProgress(pct));
+    hideUploadProgress();
+    onDone(url);
+    statusEl.textContent = 'Uploaded — click "Save all changes" to publish.';
+  }catch(err){
+    hideUploadProgress();
+    const msg = /exceed|size|too large|413/i.test(err.message || '')
+      ? 'That file is too large — this plan\'s upload limit is 50MB.'
+      : ('Upload failed: ' + (err.message || err));
+    statusEl.textContent = msg;
+  }
+}
 
 /* ---------- home video ---------- */
 function renderHomeVideo(){
@@ -171,16 +229,7 @@ function renderHomeVideo(){
 async function handleHomeVideo(e){
   const file = e.target.files[0];
   if(!file) return;
-  const statusEl = document.getElementById('status');
-  statusEl.textContent = 'Uploading video...';
-  try{
-    const url = await uploadFile(file);
-    state.homeVideo = url;
-    renderHomeVideo();
-    statusEl.textContent = 'Video uploaded — click "Save all changes" to publish.';
-  }catch(err){
-    statusEl.textContent = 'Upload failed: ' + err.message;
-  }
+  await runUpload(file, url => { state.homeVideo = url; renderHomeVideo(); });
 }
 function removeHomeVideo(){ state.homeVideo = ''; renderHomeVideo(); }
 
@@ -212,16 +261,7 @@ function removeGalleryImage(i){ state.gallery.splice(i,1); renderGallery(); }
 async function handleGalleryImage(e, i){
   const file = e.target.files[0];
   if(!file) return;
-  const statusEl = document.getElementById('status');
-  statusEl.textContent = 'Uploading image...';
-  try{
-    const url = await uploadImage(file);
-    state.gallery[i] = url;
-    renderGallery();
-    statusEl.textContent = 'Image uploaded — click "Save all changes" to publish.';
-  }catch(err){
-    statusEl.textContent = 'Upload failed: ' + err.message;
-  }
+  await runUpload(file, url => { state.gallery[i] = url; renderGallery(); });
 }
 
 /* ---------- services ---------- */
@@ -249,37 +289,48 @@ function renderProjects(){
       </div>
       <label>Description</label>
       <textarea onchange="state.projects[${i}].desc=this.value">${escHtml(p.desc)}</textarea>
-      <label>Live project URL (optional — button opens this)</label>
+      <label>External site link (optional — shown as "Visit Live Site" inside the media viewer)</label>
       <input type="text" value="${escAttr(p.liveUrl)}" placeholder="https://..." onchange="state.projects[${i}].liveUrl=this.value">
-      <label>Images</label>
+      <label>Images or videos (clicking the project on the live site opens all of these, playable)</label>
       ${['col1a','col1b','col2'].map(key=>`
         <div class="img-slot">
           ${mediaPreview(p[key])}
           <input type="file" accept="image/*,video/*" onchange="handleProjectImage(event, ${i}, '${key}')">
         </div>
       `).join('')}
-      <div class="card-actions"><button class="danger" onclick="removeProject(${i})">Delete project</button></div>
+      <label>Audio (optional)</label>
+      <div class="img-slot">
+        ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="height:32px;"></audio>` : `<span style="opacity:.5; font-size:.8rem;">No audio uploaded</span>`}
+        <input type="file" accept="audio/*" onchange="handleProjectAudio(event, ${i})">
+      </div>
+      <div class="card-actions">
+        <button class="secondary" onclick="moveProject(${i}, -1)" ${i===0 ? 'disabled style="opacity:.3;"' : ''}>↑ Move up</button>
+        <button class="secondary" onclick="moveProject(${i}, 1)" ${i===state.projects.length-1 ? 'disabled style="opacity:.3;"' : ''}>↓ Move down</button>
+        <button class="danger" onclick="removeProject(${i})">Delete project</button>
+      </div>
     </div>
   `).join('');
 }
 function addProject(){
-  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', col1a:'', col1b:'', col2:''});
+  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', col1a:'', col1b:'', col2:''});
   renderProjects();
 }
+async function handleProjectAudio(e, i){
+  const file = e.target.files[0];
+  if(!file) return;
+  await runUpload(file, url => { state.projects[i].audioUrl = url; renderProjects(); });
+}
 function removeProject(i){ state.projects.splice(i,1); renderProjects(); }
+function moveProject(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= state.projects.length) return;
+  [state.projects[i], state.projects[j]] = [state.projects[j], state.projects[i]];
+  renderProjects();
+}
 async function handleProjectImage(e, i, key){
   const file = e.target.files[0];
   if(!file) return;
-  const statusEl = document.getElementById('status');
-  statusEl.textContent = 'Uploading image...';
-  try{
-    const url = await uploadImage(file);
-    state.projects[i][key] = url;
-    renderProjects();
-    statusEl.textContent = 'Image uploaded — click "Save all changes" to publish.';
-  }catch(err){
-    statusEl.textContent = 'Upload failed: ' + err.message;
-  }
+  await runUpload(file, url => { state.projects[i][key] = url; renderProjects(); });
 }
 
 /* ---------- contact ---------- */
