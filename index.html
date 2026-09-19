@@ -403,6 +403,13 @@
     width:100%; border-radius:10px; display:block; background:#000;
   }
 
+  .lightbox-group{ margin-top:1.75rem; }
+  .lightbox-group-title{
+    font-size:.85rem; text-transform:uppercase; letter-spacing:.08em;
+    opacity:.7; margin-bottom:.75rem; padding-bottom:.5rem;
+    border-bottom:1px solid #2a2938;
+  }
+
   .home-video-wrap{ padding:0 1.5rem; margin:1.25rem 0; }
   .home-video-wrap video{
     width:100%; max-width:640px; margin:0 auto; display:block;
@@ -555,6 +562,7 @@
       <h3 class="lightbox-title" id="lightbox-title"></h3>
       <p class="lightbox-desc" id="lightbox-desc"></p>
       <div class="lightbox-media-grid" id="lightbox-media"></div>
+      <div id="lightbox-groups"></div>
       <div id="lightbox-audio"></div>
       <div id="lightbox-live-link"></div>
     </div>
@@ -766,6 +774,8 @@ function countMedia(p){
   if(images) parts.push(`${images} photo${images>1?'s':''}`);
   if(videos) parts.push(`${videos} video${videos>1?'s':''}`);
   if(p.audioUrl) parts.push('audio');
+  const groupCount = (p.mediaGroups || []).filter(g=>g.items && g.items.length).length;
+  if(groupCount) parts.push(`${groupCount} categor${groupCount>1?'ies':'y'}`);
   return parts.join(' · ') || 'No media yet';
 }
 
@@ -821,7 +831,22 @@ function openProjectMedia(i){
   const mediaItems = [p.col1a, p.col1b, p.col2].filter(Boolean);
   const mediaHtml = mediaItems.map(url => `
     <div class="lightbox-media-item">${mediaTagPlayable(url, p.name)}</div>
-  `).join('') || `<p style="opacity:.5; text-align:center;">No media uploaded for this project yet.</p>`;
+  `).join('');
+
+  const groups = (p.mediaGroups || []).filter(g => g.items && g.items.length);
+  const groupsHtml = groups.map(g => `
+    <div class="lightbox-group">
+      <div class="lightbox-group-title">${g.name}</div>
+      <div class="lightbox-media-grid">
+        ${g.items.map(url => `<div class="lightbox-media-item">${mediaTagPlayable(url, g.name)}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  const noMediaHtml = (!mediaItems.length && !groups.length)
+    ? `<p style="opacity:.5; text-align:center;">No media uploaded for this project yet.</p>`
+    : '';
+
   const audioHtml = p.audioUrl
     ? `<audio controls src="${p.audioUrl}" style="width:100%; margin-top:1rem;"></audio>`
     : '';
@@ -832,7 +857,8 @@ function openProjectMedia(i){
   document.getElementById('lightbox-title').textContent = p.name;
   document.getElementById('lightbox-category').textContent = p.category;
   document.getElementById('lightbox-desc').textContent = p.desc;
-  document.getElementById('lightbox-media').innerHTML = mediaHtml;
+  document.getElementById('lightbox-media').innerHTML = mediaHtml + noMediaHtml;
+  document.getElementById('lightbox-groups').innerHTML = groupsHtml;
   document.getElementById('lightbox-audio').innerHTML = audioHtml;
   document.getElementById('lightbox-live-link').innerHTML = liveLinkHtml;
   document.getElementById('project-lightbox').style.display = 'flex';

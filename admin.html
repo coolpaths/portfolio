@@ -303,6 +303,9 @@ function renderProjects(){
         ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="height:32px;"></audio>` : `<span style="opacity:.5; font-size:.8rem;">No audio uploaded</span>`}
         <input type="file" accept="audio/*" onchange="handleProjectAudio(event, ${i})">
       </div>
+      <label>Categories (e.g. "Social Media Video", "Motion Graphics", "Ads Video" — shown grouped when someone opens this project)</label>
+      ${renderGroups(i)}
+      <button class="secondary" onclick="addGroup(${i})">+ Add category</button>
       <div class="card-actions">
         <button class="secondary" onclick="moveProject(${i}, -1)" ${i===0 ? 'disabled style="opacity:.3;"' : ''}>↑ Move up</button>
         <button class="secondary" onclick="moveProject(${i}, 1)" ${i===state.projects.length-1 ? 'disabled style="opacity:.3;"' : ''}>↓ Move down</button>
@@ -311,8 +314,50 @@ function renderProjects(){
     </div>
   `).join('');
 }
+function renderGroups(pi){
+  const groups = state.projects[pi].mediaGroups || (state.projects[pi].mediaGroups = []);
+  return groups.map((g,gi)=>`
+    <div class="card" style="background:#0c0b12; margin-top:.5rem;">
+      <div class="row">
+        <input type="text" placeholder="Category name" value="${escAttr(g.name)}"
+          onchange="state.projects[${pi}].mediaGroups[${gi}].name=this.value">
+        <div style="flex:none;"><button class="danger" onclick="removeGroup(${pi},${gi})">Delete category</button></div>
+      </div>
+      ${(g.items||[]).map((url,ii)=>`
+        <div class="img-slot">
+          ${mediaPreview(url)}
+          <span style="flex:1; font-size:.75rem; opacity:.6; word-break:break-all;">item ${ii+1}</span>
+          <button class="danger" onclick="removeGroupItem(${pi},${gi},${ii})">Delete</button>
+        </div>
+      `).join('')}
+      <label>Add image or video to this category</label>
+      <input type="file" accept="image/*,video/*" onchange="handleGroupItemUpload(event, ${pi}, ${gi})">
+    </div>
+  `).join('');
+}
+function addGroup(pi){
+  if(!state.projects[pi].mediaGroups) state.projects[pi].mediaGroups = [];
+  state.projects[pi].mediaGroups.push({name:'New Category', items:[]});
+  renderProjects();
+}
+function removeGroup(pi, gi){
+  state.projects[pi].mediaGroups.splice(gi,1);
+  renderProjects();
+}
+function removeGroupItem(pi, gi, ii){
+  state.projects[pi].mediaGroups[gi].items.splice(ii,1);
+  renderProjects();
+}
+async function handleGroupItemUpload(e, pi, gi){
+  const file = e.target.files[0];
+  if(!file) return;
+  await runUpload(file, url => {
+    state.projects[pi].mediaGroups[gi].items.push(url);
+    renderProjects();
+  });
+}
 function addProject(){
-  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', col1a:'', col1b:'', col2:''});
+  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', mediaGroups:[], col1a:'', col1b:'', col2:''});
   renderProjects();
 }
 async function handleProjectAudio(e, i){
