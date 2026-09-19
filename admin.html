@@ -306,6 +306,10 @@ function renderProjects(){
       <label>Categories (e.g. "Social Media Video", "Motion Graphics", "Ads Video" — shown grouped when someone opens this project)</label>
       ${renderGroups(i)}
       <button class="secondary" onclick="addGroup(${i})">+ Add category</button>
+
+      <label>Documents (PDF, etc. — shown as downloadable links)</label>
+      ${renderFiles(i)}
+      <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" onchange="handleProjectFile(event, ${i})">
       <div class="card-actions">
         <button class="secondary" onclick="moveProject(${i}, -1)" ${i===0 ? 'disabled style="opacity:.3;"' : ''}>↑ Move up</button>
         <button class="secondary" onclick="moveProject(${i}, 1)" ${i===state.projects.length-1 ? 'disabled style="opacity:.3;"' : ''}>↓ Move down</button>
@@ -317,10 +321,15 @@ function renderProjects(){
 function renderGroups(pi){
   const groups = state.projects[pi].mediaGroups || (state.projects[pi].mediaGroups = []);
   return groups.map((g,gi)=>`
-    <div class="card" style="background:#0c0b12; margin-top:.5rem;">
+    <div class="card" style="background:#0c0b12; margin-top:.5rem; border-left:3px solid ${g.color || '#4F46E5'};">
       <div class="row">
         <input type="text" placeholder="Category name" value="${escAttr(g.name)}"
           onchange="state.projects[${pi}].mediaGroups[${gi}].name=this.value">
+        <div style="flex:none; display:flex; align-items:center; gap:.5rem;">
+          <label style="margin:0; font-size:.75rem;">Color</label>
+          <input type="color" value="${g.color || '#4F46E5'}" style="width:36px; height:36px; padding:0; border:none; background:none;"
+            onchange="state.projects[${pi}].mediaGroups[${gi}].color=this.value; renderProjects();">
+        </div>
         <div style="flex:none;"><button class="danger" onclick="removeGroup(${pi},${gi})">Delete category</button></div>
       </div>
       ${(g.items||[]).map((url,ii)=>`
@@ -337,7 +346,9 @@ function renderGroups(pi){
 }
 function addGroup(pi){
   if(!state.projects[pi].mediaGroups) state.projects[pi].mediaGroups = [];
-  state.projects[pi].mediaGroups.push({name:'New Category', items:[]});
+  const palette = ['#4F46E5','#DB2777','#059669','#D97706','#2563EB','#7C3AED'];
+  const color = palette[state.projects[pi].mediaGroups.length % palette.length];
+  state.projects[pi].mediaGroups.push({name:'New Category', color, items:[]});
   renderProjects();
 }
 function removeGroup(pi, gi){
@@ -356,8 +367,33 @@ async function handleGroupItemUpload(e, pi, gi){
     renderProjects();
   });
 }
+
+/* ---------- documents (PDF etc.) ---------- */
+function renderFiles(pi){
+  const files = state.projects[pi].files || (state.projects[pi].files = []);
+  return files.map((f,fi)=>`
+    <div class="img-slot">
+      <span style="flex:1; font-size:.8rem;">📄 ${escHtml(f.name)}</span>
+      <button class="danger" onclick="removeProjectFile(${pi},${fi})">Delete</button>
+    </div>
+  `).join('');
+}
+function removeProjectFile(pi, fi){
+  state.projects[pi].files.splice(fi,1);
+  renderProjects();
+}
+async function handleProjectFile(e, pi){
+  const file = e.target.files[0];
+  if(!file) return;
+  await runUpload(file, url => {
+    if(!state.projects[pi].files) state.projects[pi].files = [];
+    state.projects[pi].files.push({ name: file.name, url });
+    renderProjects();
+  });
+}
+
 function addProject(){
-  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', mediaGroups:[], col1a:'', col1b:'', col2:''});
+  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', mediaGroups:[], files:[], col1a:'', col1b:'', col2:''});
   renderProjects();
 }
 async function handleProjectAudio(e, i){
