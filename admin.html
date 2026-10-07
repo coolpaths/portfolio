@@ -185,7 +185,7 @@ async function uploadFile(file, onProgress){
         bucketName: 'portfolio-images',
         objectName: path,
         contentType: file.type || 'application/octet-stream',
-        cacheControl: '3600',
+        cacheControl: '31536000',
       },
       chunkSize: 6 * 1024 * 1024, // required by Supabase's resumable endpoint
       onError: (error) => reject(error),

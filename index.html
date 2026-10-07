@@ -1021,7 +1021,7 @@ function mediaTagPlayable(url, alt){
   if(isVideoUrl(url)){
     return `
       <div class="video-wrap" data-video="${escAttr(url)}" data-label="${escAttr(alt || '')}"
-           onclick="openVideoPlayer(this)" oncontextmenu="return false;">
+           onclick="openVideoPlayer(this)" onpointerdown="vpWarm({url:this.dataset.video})" oncontextmenu="return false;">
         <video src="${url}#t=0.1" playsinline preload="metadata" muted
                disablepictureinpicture controlslist="nodownload"></video>
         <button class="play-overlay" aria-label="Play video">▶</button>
@@ -1190,16 +1190,58 @@ function vpLoad(i, autoplay){
   VP.fill.style.width = VP.buffer.style.width = '0%';
   VP.knob.style.left = '0%';
   VP.current.textContent = VP.duration.textContent = '0:00';
+  VP.video.preload = 'auto';
   VP.video.src = item.url;
   VP.video.load();
-  if(autoplay){
-    VP.video.play().catch(()=>{ /* autoplay blocked — user taps play */ });
-  }
+  vpWantPlay = !!autoplay;
+  vpStartWhenReady();
   vpSyncPlayIcons();
   vpShowUI();
 }
 
+/* start playback only once a few seconds are buffered, so the first play doesn't stutter */
+let vpWantPlay = false;
+function vpBufferedAhead(){
+  const v = VP.video;
+  for(let r = 0; r < v.buffered.length; r++){
+    if(v.currentTime >= v.buffered.start(r) && v.currentTime <= v.buffered.end(r)){
+      return v.buffered.end(r) - v.currentTime;
+    }
+  }
+  return 0;
+}
+function vpStartWhenReady(){
+  if(!vpWantPlay) return;
+  const v = VP.video;
+  const need = Math.min(3, (v.duration || 3) - v.currentTime);
+  if(v.readyState >= 3 && (vpBufferedAhead() >= need || v.readyState === 4)){
+    vpWantPlay = false;
+    v.play().catch(()=>{});
+  }
+}
+VP.video.addEventListener('progress', vpStartWhenReady);
+VP.video.addEventListener('canplay', vpStartWhenReady);
+VP.video.addEventListener('canplaythrough', ()=>{
+  vpStartWhenReady();
+  vpWarm(vpPlaylist[vpIndex + 1]);   // only after the current video is fully ready
+});
+
+/* quietly pre-fetch the next video in the list */
+let vpWarmEl = null;
+function vpWarm(item){
+  if(!item) return;
+  if(!vpWarmEl){
+    vpWarmEl = document.createElement('video');
+    vpWarmEl.muted = true; vpWarmEl.preload = 'auto';
+  }
+  if(vpWarmEl.dataset.src === item.url) return;
+  vpWarmEl.dataset.src = item.url;
+  vpWarmEl.src = item.url;
+  vpWarmEl.load();
+}
+
 function vpTogglePlay(){
+  vpWantPlay = false;
   if(VP.video.paused) VP.video.play().catch(()=>{});
   else VP.video.pause();
   vpSyncPlayIcons();
@@ -1209,6 +1251,8 @@ function vpPrev(){ if(vpIndex > 0) vpLoad(vpIndex - 1, true); }
 function vpNext(){ if(vpIndex < vpPlaylist.length - 1) vpLoad(vpIndex + 1, true); }
 
 function closeVideoPlayer(fromPopState){
+  vpWantPlay = false;
+  if(vpWarmEl){ vpWarmEl.removeAttribute('src'); vpWarmEl.dataset.src = ''; vpWarmEl.load(); }
   VP.video.pause();
   VP.video.removeAttribute('src');
   VP.video.load();
