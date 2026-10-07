@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<link rel="preconnect" href="https://kyozprnqpzzrmyvtdxbu.supabase.co">
+<link rel="preconnect" href="https://kyozprnqpzzrmyvtdxbu.supabase.co" crossorigin>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Kool — Digital Marketing & AI Specialist</title>
 <meta name="description" content="Kool — Digital Marketing & AI Specialist. Turning strategy into growth, powered by data, creativity, and AI." />
@@ -1025,7 +1027,7 @@ function isVideoUrl(url){
 function mediaTag(url, alt){
   if(!url) return '';
   return isVideoUrl(url)
-    ? `<video src="${url}" autoplay muted loop playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>`
+    ? `<video data-src="${url}" preload="none" muted loop playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>`
     : `<img src="${url}" alt="${alt}" loading="lazy" />`;
 }
 function mediaTagPlayable(url, alt){
@@ -1033,7 +1035,7 @@ function mediaTagPlayable(url, alt){
   if(isVideoUrl(url)){
     return `
       <div class="video-wrap" data-video="${escAttr(url)}" data-label="${escAttr(alt || '')}"
-           onclick="openVideoPlayer(this)" onpointerdown="vpWarm({url:this.dataset.video})" oncontextmenu="return false;">
+           onclick="openVideoPlayer(this)" oncontextmenu="return false;">
         <video src="${url}#t=0.1" playsinline preload="metadata" muted
                disablepictureinpicture controlslist="nodownload"></video>
         <button class="play-overlay" aria-label="Play video">▶</button>
@@ -1102,6 +1104,31 @@ function renderProjects(projects){
       </div>
     </div>
   `).join('');
+  initLazyVideos(stackEl);
+}
+
+/* ---------- lazy card videos: only load + play while on screen ---------- */
+const lazyVideoObserver = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{
+    const v = en.target;
+    if(en.isIntersecting){
+      if(!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src;
+      v.play().catch(()=>{});
+    } else {
+      v.pause();
+    }
+  });
+}, { rootMargin:'200px 0px' }) : null;
+function initLazyVideos(root){
+  (root || document).querySelectorAll('video[data-src]').forEach(v=>{
+    if(lazyVideoObserver) lazyVideoObserver.observe(v);
+    else { v.src = v.dataset.src; v.play().catch(()=>{}); }
+  });
+}
+function pauseCardVideos(){ document.querySelectorAll('video[data-src]').forEach(v=>v.pause()); }
+function resumeCardVideos(){
+  if(!lazyVideoObserver) return;
+  document.querySelectorAll('video[data-src]').forEach(v=>{ lazyVideoObserver.unobserve(v); lazyVideoObserver.observe(v); });
 }
 
 /* ---------- fullscreen video player ---------- */
@@ -1169,6 +1196,7 @@ function vpShowUI(){
 
 /* open the player from a .video-wrap thumbnail */
 function openVideoPlayer(wrap){
+  pauseCardVideos();   // stop background card videos so the player gets all the bandwidth
   const scope = wrap.closest('.lightbox-group') || document.getElementById('lightbox-media') || document;
   const wraps = Array.from(scope.querySelectorAll('.video-wrap[data-video]'));
   vpPlaylist = wraps.map(w => ({ url: w.dataset.video, label: w.dataset.label || '' }));
@@ -1225,7 +1253,7 @@ function vpBufferedAhead(){
 function vpStartWhenReady(){
   if(!vpWantPlay) return;
   const v = VP.video;
-  const need = Math.min(3, (v.duration || 3) - v.currentTime);
+  const need = Math.min(1.5, (v.duration || 1.5) - v.currentTime);
   if(v.readyState >= 3 && (vpBufferedAhead() >= need || v.readyState === 4)){
     vpWantPlay = false;
     v.play().catch(()=>{});
@@ -1244,7 +1272,7 @@ function vpWarm(item){
   if(!item) return;
   if(!vpWarmEl){
     vpWarmEl = document.createElement('video');
-    vpWarmEl.muted = true; vpWarmEl.preload = 'auto';
+    vpWarmEl.muted = true; vpWarmEl.preload = 'metadata';
   }
   if(vpWarmEl.dataset.src === item.url) return;
   vpWarmEl.dataset.src = item.url;
@@ -1263,6 +1291,7 @@ function vpPrev(){ if(vpIndex > 0) vpLoad(vpIndex - 1, true); }
 function vpNext(){ if(vpIndex < vpPlaylist.length - 1) vpLoad(vpIndex + 1, true); }
 
 function closeVideoPlayer(fromPopState){
+  setTimeout(resumeCardVideos, 300);
   vpWantPlay = false;
   if(vpWarmEl){ vpWarmEl.removeAttribute('src'); vpWarmEl.dataset.src = ''; vpWarmEl.load(); }
   VP.video.pause();
