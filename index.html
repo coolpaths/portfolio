@@ -422,6 +422,14 @@
   }
   .lightbox-title{ font-size:1.4rem; margin:.35rem 0 .75rem; }
   .lightbox-desc{ opacity:.8; line-height:1.6; font-size:.9rem; margin-bottom:1.25rem; }
+  .lightbox-share{ display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+  .lightbox-share button{
+    background:#161522; color:#D7E2EA; border:1px solid #2a2938; border-radius:999px;
+    padding:.5rem 1rem; font-size:.78rem; cursor:pointer; font-family:inherit;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .lightbox-share button:hover{ border-color:#4F46E5; background:#1a1929; }
+  .lightbox-share button.copied{ border-color:#059669; color:#6ee7b7; }
   .lightbox-media-grid{
     display:grid; grid-template-columns:repeat(3, 1fr); gap:.5rem;
   }
@@ -759,6 +767,10 @@
       <div class="lightbox-category" id="lightbox-category"></div>
       <h3 class="lightbox-title" id="lightbox-title"></h3>
       <p class="lightbox-desc" id="lightbox-desc"></p>
+      <div class="lightbox-share">
+        <button type="button" id="lightbox-copy" onclick="copyProjectLink()">🔗 Copy link</button>
+        <button type="button" onclick="closeProjectMedia(); document.getElementById('portfolio').scrollIntoView({behavior:'smooth'})">← All projects</button>
+      </div>
       <div class="lightbox-media-grid" id="lightbox-media"></div>
       <div id="lightbox-groups"></div>
       <div id="lightbox-audio"></div>
@@ -1385,7 +1397,8 @@ document.addEventListener('keydown', e => {
 }, true);
 
 /* ---------- project media lightbox ---------- */
-function openProjectMedia(i){
+function openProjectMedia(i, opts){
+  opts = opts || {};
   const p = currentProjects[i];
   if(!p) return;
   const mediaItems = [p.col1a, p.col1b, p.col2].filter(Boolean);
@@ -1436,16 +1449,110 @@ function openProjectMedia(i){
   document.getElementById('lightbox-audio').innerHTML = audioHtml;
   document.getElementById('lightbox-live-link').innerHTML = liveLinkHtml;
   document.getElementById('project-lightbox').style.display = 'flex';
+  document.getElementById('project-lightbox').scrollTop = 0;
   document.body.style.overflow = 'hidden';
+
+  /* give every project its own shareable address: yoursite/#project/<slug> */
+  openSlug = projectSlugMap.get(p) || '';
+  if(openSlug){
+    const target = '#project/' + openSlug;
+    try{
+      if(opts.fromHash){ lbPushed = false; }
+      else if(location.hash !== target){ history.pushState({ lb:true }, '', target); lbPushed = true; }
+    }catch(e){}
+  }
 }
-function closeProjectMedia(){
-  if(document.getElementById('video-player').classList.contains('open')) closeVideoPlayer();
-  document.getElementById('project-lightbox').style.display = 'none';
+function closeProjectMedia(fromPop){
+  const lb = document.getElementById('project-lightbox');
+  const wasOpen = lb.style.display === 'flex';
+  let steps = 0;
+  if(document.getElementById('video-player').classList.contains('open')){
+    if(vpHistoryPushed) steps++;
+    closeVideoPlayer(true);            // history is unwound together with the project entry below
+  }
+  lb.style.display = 'none';
   document.body.style.overflow = '';
   document.getElementById('lightbox-media').innerHTML = '';
   document.getElementById('lightbox-groups').innerHTML = '';
   document.getElementById('lightbox-audio').innerHTML = '';
+  openSlug = '';
+  if(fromPop === true){ lbPushed = false; return; }
+  if(wasOpen){
+    try{
+      if(lbPushed){ steps++; lbPushed = false; }
+      if(steps) history.go(-steps);
+      else if(/^#project\//.test(location.hash)){
+        history.replaceState(null, '', location.pathname + location.search);   // landed on a shared link
+      }
+    }catch(e){}
+  }
 }
+
+/* ---------- per-project share links ---------- */
+let openSlug = '';
+let lbPushed = false;
+let projectSlugMap = new Map();
+function slugify(str){
+  return String(str || '').toLowerCase().replace(/&/g,' and ')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function buildProjectSlugs(){
+  projectSlugMap = new Map();
+  const seen = {};
+  allProjects.forEach((p, idx)=>{
+    const base = slugify(p.name) || ('project-' + (idx + 1));
+    let slug = base, n = 2;
+    while(seen[slug]) slug = base + '-' + (n++);
+    seen[slug] = true;
+    projectSlugMap.set(p, slug);
+  });
+}
+function projectShareUrl(slug){
+  return location.origin + location.pathname + location.search + '#project/' + slug;
+}
+function openProjectBySlug(slug){
+  const p = allProjects.find(x => projectSlugMap.get(x) === slug);
+  if(!p) return false;
+  if(activeFilter !== 'All') filterProjects('All');
+  const idx = currentProjects.indexOf(p);
+  if(idx < 0) return false;
+  openProjectMedia(idx, { fromHash:true });
+  return true;
+}
+function routeFromHash(){
+  const m = location.hash.match(/^#project\/(.+)$/);
+  if(!m) return;
+  let slug = m[1];
+  try{ slug = decodeURIComponent(slug); }catch(e){}
+  if(slug === openSlug) return;
+  if(!openProjectBySlug(slug)){
+    const el = document.getElementById('portfolio');
+    if(el) el.scrollIntoView();
+  }
+}
+async function copyProjectLink(){
+  if(!openSlug) return;
+  const url = projectShareUrl(openSlug);
+  const btn = document.getElementById('lightbox-copy');
+  let ok = false;
+  try{ await navigator.clipboard.writeText(url); ok = true; }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand('copy'); }catch(err){}
+    ta.remove();
+  }
+  btn.textContent = ok ? '✓ Link copied' : url;
+  btn.classList.toggle('copied', ok);
+  setTimeout(()=>{ btn.textContent = '🔗 Copy link'; btn.classList.remove('copied'); }, 2200);
+}
+window.addEventListener('popstate', ()=>{
+  const lb = document.getElementById('project-lightbox');
+  if(lb.style.display === 'flex' && !/^#project\//.test(location.hash)) closeProjectMedia(true);
+  else routeFromHash();
+});
+window.addEventListener('hashchange', routeFromHash);
 
 function updateProjectScale(){
   for(let i=0;i<totalCards;i++){
@@ -1516,11 +1623,13 @@ async function loadContent(){
 
   renderServices(services);
   allProjects = projects;
+  buildProjectSlugs();
   activeFilter = 'All';
   renderFilters();
   renderProjects(projects);
   updateProjectScale();
   initAboutAnimation();
+  routeFromHash();     // a shared #project/... link opens that project straight away
 }
 loadContent();
 

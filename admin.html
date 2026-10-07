@@ -3,472 +3,1710 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin — Portfolio Content</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
+<title>Kool — Digital Marketing & AI Specialist</title>
+<meta name="description" content="Kool — Digital Marketing & AI Specialist. Turning strategy into growth, powered by data, creativity, and AI." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%234F46E5'/%3E%3Ctext x='50' y='66' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif'%3EK%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  *{ box-sizing:border-box; }
-  body{ font-family:sans-serif; background:#0A0A0F; color:#D7E2EA; max-width:900px; margin:0 auto; padding:2rem 1.25rem 6rem; }
-  h1{ font-size:1.5rem; margin-bottom:.5rem; }
-  h2{ font-size:1.1rem; margin:2.5rem 0 1rem; border-bottom:1px solid #333; padding-bottom:.5rem; }
-  label{ display:block; font-size:.8rem; opacity:.65; margin:1rem 0 .35rem; }
-  input[type=text], input[type=email], input[type=url], textarea{
-    width:100%; background:#14131c; color:#D7E2EA; border:1px solid #333;
-    border-radius:8px; padding:.6rem .7rem; font-family:inherit; font-size:.9rem;
+  :root{
+    --bg:#0A0A0F;
+    --ink:#D7E2EA;
+    --grad-top:#818CF8;
+    --grad-bottom:#EEF2FF;
+    --glow-1:#4F46E5;
+    --glow-2:#6366F1;
+    --glow-3:#312E81;
+    --accent-gold:#C9A24B;
   }
-  textarea{ min-height:90px; resize:vertical; }
-  button{
-    background:#4F46E5; color:#fff; border:none; border-radius:8px;
-    padding:.6rem 1.1rem; font-size:.85rem; cursor:pointer; margin-top:.5rem;
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  html,body{ background:#0A0A0F; }
+  body{
+    font-family:'Kanit', sans-serif;
+    background:#0A0A0F;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
   }
-  button.secondary{ background:#262533; }
-  button.danger{ background:#7f1d1d; }
-  button:hover{ opacity:.85; }
-  .card{ background:#121119; border:1px solid #2a2938; border-radius:10px; padding:1rem 1.1rem; margin-bottom:1rem; }
-  .row{ display:flex; gap:.75rem; flex-wrap:wrap; }
-  .row > *{ flex:1; min-width:140px; }
-  .img-slot{ display:flex; align-items:center; gap:.6rem; margin-top:.5rem; }
-  .img-slot img{ width:56px; height:56px; object-fit:cover; border-radius:6px; background:#222; flex:none; }
-  .img-slot input[type=file]{ font-size:.75rem; flex:1; }
-  .card-actions{ margin-top:.75rem; display:flex; gap:.5rem; }
-  #status{ margin-top:1.5rem; font-size:.85rem; }
-  .upload-progress{
-    height:6px; background:#222; border-radius:4px; overflow:hidden;
-    margin-top:.4rem; display:none;
+  #root{ background:#0A0A0F; }
+  .app-wrap{ background:#0A0A0F; overflow-x:clip; }
+  img{ display:block; max-width:100%; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  .hero-heading{
+    background:linear-gradient(180deg, var(--grad-top) 0%, var(--grad-bottom) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    color:transparent;
   }
-  .upload-progress-bar{ height:100%; background:#4F46E5; width:0%; transition:width .2s ease; }
-  #login-box{ max-width:320px; margin:4rem auto; }
-  #save-bar{
-    position:sticky; bottom:0; background:#0A0A0F; border-top:1px solid #333;
-    padding:1rem 0; margin-top:2rem;
+
+  /* ---------- fade-in utility ---------- */
+  .fade-in{
+    opacity:0;
+    transform:translate3d(var(--fx,0), var(--fy,30px), 0);
+    transition:opacity var(--fd,0.7s) cubic-bezier(.25,.1,.25,1), transform var(--fd,0.7s) cubic-bezier(.25,.1,.25,1);
+    transition-delay:var(--fdelay,0s);
+    will-change:transform, opacity;
   }
+  .fade-in.in-view{ opacity:1; transform:translate3d(0,0,0); }
+  @media (prefers-reduced-motion: reduce){
+    .fade-in{ transition:none; transform:none; opacity:1; }
+  }
+
+  /* ---------- ambient indigo glow (behind hero/about/projects content) ---------- */
+  .hero::before,
+  .about::before,
+  .projects::before{
+    content:'';
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 55% 45% at 18% 12%, rgba(79,70,229,0.28), transparent 62%),
+      radial-gradient(ellipse 45% 38% at 85% 22%, rgba(99,102,241,0.18), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(49,46,129,0.32), transparent 65%);
+  }
+
+  /* ---------- buttons ---------- */
+  .btn-contact{
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:9999px;
+    background:linear-gradient(123deg, #14123A 7%, #312E81 37%, #4F46E5 72%, #6366F1 100%);
+    box-shadow:0px 4px 4px rgba(79,70,229,0.35), 4px 4px 16px #4338CA inset;
+    outline:2px solid #fff; outline-offset:-3px;
+    color:#fff; font-weight:500; text-transform:uppercase; letter-spacing:.15em;
+    padding:.75rem 2rem; font-size:.75rem;
+    transition:opacity .2s ease;
+    border:none; white-space:nowrap;
+  }
+  .btn-contact:hover{ opacity:.85; }
+  @media (min-width:640px){ .btn-contact{ padding:.875rem 2.5rem; font-size:.875rem; } }
+  @media (min-width:768px){ .btn-contact{ padding:1rem 3rem; font-size:1rem; } }
+
+  .btn-live{
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:9999px; border:2px solid #4F46E5;
+    color:var(--ink); font-weight:600; text-transform:uppercase; letter-spacing:.15em;
+    padding:.75rem 2rem; font-size:.85rem; white-space:nowrap;
+    background:rgba(79,70,229,.12); transition:background .25s ease, transform .25s ease, box-shadow .25s ease;
+    position:relative; overflow:hidden;
+  }
+  .btn-live:hover{
+    background:#4F46E5; transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(79,70,229,.45);
+  }
+  @media (min-width:640px){ .btn-live{ padding:.875rem 2.5rem; font-size:1rem; } }
+
+  /* ================= HERO ================= */
+  .hero{
+    display:flex; flex-direction:column;
+    overflow-x:clip; position:relative;
+    padding-bottom:2.5rem;
+  }
+  @media (min-width:768px){ .hero{ padding-bottom:3rem; } }
+  .navbar{
+    display:flex; justify-content:space-between;
+    padding:1.5rem 1.5rem 0; z-index:20; position:relative;
+  }
+  @media (min-width:768px){ .navbar{ padding:2rem 2.5rem 0; } }
+  .navbar a{
+    color:var(--ink); font-weight:500; text-transform:uppercase; letter-spacing:.1em;
+    font-size:.85rem; transition:opacity .2s ease;
+  }
+  .navbar a:hover{ opacity:.7; }
+  @media (min-width:768px){ .navbar a{ font-size:1.125rem; } }
+  @media (min-width:1024px){ .navbar a{ font-size:1.4rem; } }
+
+  .hero-heading-wrap{ overflow:hidden; width:100%; margin-top:1.25rem; position:relative; z-index:1; }
+  @media (min-width:640px){ .hero-heading-wrap{ margin-top:1.5rem; } }
+  @media (min-width:768px){ .hero-heading-wrap{ margin-top:1.75rem; } }
+  .hero-heading{
+    font-weight:900; text-transform:uppercase; letter-spacing:-0.03em;
+    line-height:0.9; white-space:nowrap; width:100%;
+    font-size:14vw;
+  }
+  @media (min-width:640px){ .hero-heading{ font-size:15vw; } }
+  @media (min-width:768px){ .hero-heading{ font-size:16vw; } }
+  @media (min-width:1024px){ .hero-heading{ font-size:17.5vw; } }
+
+  .hero-portrait-wrap{
+    position:absolute; left:50%; transform:translateX(-50%);
+    top:50%; translate:0 -50%; z-index:10; width:280px;
+  }
+  .hero-portrait-wrap::before{
+    content:'';
+    position:absolute; inset:-18%; z-index:-1; border-radius:50%;
+    background:radial-gradient(circle, rgba(99,102,241,0.5) 0%, rgba(49,46,129,0.22) 45%, transparent 72%);
+    filter:blur(36px);
+  }
+  @media (min-width:640px){ .hero-portrait-wrap{ width:360px; top:auto; bottom:0; translate:0 0; } }
+  @media (min-width:768px){ .hero-portrait-wrap{ width:440px; } }
+  @media (min-width:1024px){ .hero-portrait-wrap{ width:520px; } }
+  .magnet{ display:inline-block; will-change:transform; }
+
+  .hero-bottom{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    padding:0 1.5rem; position:relative; z-index:20; margin-top:2rem;
+  }
+  @media (min-width:768px){ .hero-bottom{ padding:0 2.5rem; margin-top:2.5rem; } }
+  .hero-bottom p{
+    color:var(--ink); font-weight:300; text-transform:uppercase; letter-spacing:.05em;
+    line-height:1.3; font-size:clamp(0.75rem,1.4vw,1.5rem);
+    max-width:160px;
+  }
+  .hero-tagline{
+    background:linear-gradient(100deg, #D7E2EA 0%, #818CF8 25%, #EEF2FF 50%, #818CF8 75%, #D7E2EA 100%);
+    background-size:250% auto;
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+    animation:shimmer 6s linear infinite;
+  }
+  @keyframes shimmer{
+    0%{ background-position:0% 50%; }
+    100%{ background-position:250% 50%; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero-tagline{ animation:none; }
+  }
+  @media (min-width:640px){ .hero-bottom p{ max-width:220px; } }
+  @media (min-width:768px){ .hero-bottom p{ max-width:260px; } }
+
+  /* ================= MARQUEE ================= */
+  .marquee-section{ background:#0A0A0F; padding:6rem 0 2.5rem; overflow:hidden; }
+  @media (min-width:640px){ .marquee-section{ padding-top:8rem; } }
+  @media (min-width:768px){ .marquee-section{ padding-top:10rem; } }
+  .marquee-row{ display:flex; gap:.75rem; will-change:transform; margin-bottom:.75rem; }
+  .marquee-row img{
+    width:420px; height:270px; object-fit:cover; border-radius:1rem; flex:none;
+    transition:filter .3s ease, transform .3s ease;
+  }
+  .marquee-row img:hover{ filter:brightness(1.15); transform:scale(1.03); }
+
+  /* ================= ABOUT ================= */
+  .about{
+    min-height:100vh; position:relative; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:5rem 1.25rem; gap:2.5rem;
+  }
+  @media (min-width:640px){ .about{ padding:5rem 2rem; } }
+  @media (min-width:768px){ .about{ padding:5rem 2.5rem; } }
+  .about-deco{ position:absolute; z-index:0; display:none; }
+  @media (min-width:640px){
+    .about-deco{ display:block; }
+    .deco-moon{ top:4%; left:2%; width:160px; }
+    .deco-p59{ bottom:8%; left:6%; width:140px; }
+    .deco-lego{ top:4%; right:2%; width:160px; }
+    .deco-group{ bottom:8%; right:6%; width:170px; }
+  }
+  @media (min-width:768px){
+    .deco-moon{ left:4%; width:210px; }
+    .deco-p59{ left:10%; width:180px; }
+    .deco-lego{ right:4%; width:210px; }
+    .deco-group{ right:10%; width:220px; }
+  }
+  .section-heading{
+    font-weight:900; text-transform:uppercase; line-height:0.9; letter-spacing:-0.02em;
+    font-size:clamp(3rem,12vw,160px); position:relative; z-index:1;
+  }
+  .section-heading::after{
+    content:''; display:block; width:80px; height:5px; border-radius:3px;
+    background:linear-gradient(90deg, #4F46E5, #a5a0ff); margin-top:.6rem;
+  }
+  .services .section-heading::after, .projects .section-heading::after{ margin-left:auto; margin-right:auto; }
+  .about-text-block{ display:flex; flex-direction:column; align-items:center; gap:2.5rem; position:relative; z-index:1; }
+  @media (min-width:640px){ .about-text-block{ gap:3.5rem; } }
+  @media (min-width:768px){ .about-text-block{ gap:4rem; } }
+  .about-btn-wrap{ margin-top:4rem; position:relative; z-index:1; }
+  @media (min-width:640px){ .about-btn-wrap{ margin-top:5rem; } }
+  @media (min-width:768px){ .about-btn-wrap{ margin-top:6rem; } }
+  .about-copy{
+    color:var(--ink); font-weight:500; text-align:center; line-height:1.65;
+    max-width:680px; font-size:clamp(1rem,2vw,1.3rem);
+  }
+  .about-copy span{ opacity:0.45; transition:opacity .05s linear; }
+
+  /* ================= SERVICES ================= */
+  .services{
+    background:#FFFFFF; color:#0A0A0F;
+    border-radius:40px 40px 0 0;
+    padding:5rem 1.25rem;
+  }
+  @media (min-width:640px){ .services{ border-radius:50px 50px 0 0; padding:6rem 2rem; } }
+  @media (min-width:768px){ .services{ border-radius:60px 60px 0 0; padding:8rem 2.5rem; } }
+  .services .section-heading{ text-align:center; margin-bottom:4rem; width:100%; }
+  @media (min-width:640px){ .services .section-heading{ margin-bottom:5rem; } }
+  @media (min-width:768px){ .services .section-heading{ margin-bottom:7rem; } }
+  .services-list{ max-width:64rem; margin:0 auto; }
+  .service-item{
+    display:flex; align-items:center; gap:1.5rem;
+    padding:2rem 0; border-bottom:1px solid rgba(12,12,12,0.15);
+  }
+  .service-item:first-child{ border-top:1px solid rgba(12,12,12,0.15); }
+  @media (min-width:640px){ .service-item{ padding:2.5rem 0; gap:2rem; } }
+  @media (min-width:768px){ .service-item{ padding:3rem 0; } }
+  .service-num{
+    font-weight:900; font-size:clamp(3rem,10vw,140px); flex:none;
+    line-height:1; color:#0A0A0F;
+  }
+  .service-body h3{
+    font-weight:500; text-transform:uppercase; font-size:clamp(1rem,2.2vw,2.1rem);
+    margin-bottom:.5rem;
+  }
+  .service-body p{
+    font-weight:300; line-height:1.6; max-width:42rem;
+    font-size:clamp(0.85rem,1.6vw,1.25rem); opacity:0.6;
+  }
+
+  /* ================= PROJECTS ================= */
+  .projects{
+    background:#0A0A0F; border-radius:40px 40px 0 0;
+    margin-top:-2.5rem; position:relative; z-index:10;
+    padding:5rem 1.25rem 16rem;
+  }
+  @media (min-width:640px){ .projects{ border-radius:50px 50px 0 0; margin-top:-3rem; padding:6rem 2rem 18rem; } }
+  @media (min-width:768px){ .projects{ border-radius:60px 60px 0 0; margin-top:-3.5rem; padding:8rem 2.5rem 20rem; } }
+  .projects .section-heading{ text-align:center; margin-bottom:3rem; }
+
+  .project-card-container{
+    height:85vh; position:sticky; top:6rem; display:flex; align-items:flex-start;
+  }
+  @media (min-width:768px){ .project-card-container{ top:8rem; } }
+
+  .project-card{
+    width:100%; border-radius:40px; border:2px solid var(--ink);
+    background:#0A0A0F; padding:1rem; transform-origin:top center;
+    max-width:1100px; margin:0 auto; transition:border-color .3s ease, box-shadow .3s ease;
+    position:relative;
+  }
+  .project-card:hover{
+    border-color:#4F46E5; box-shadow:0 0 40px rgba(79,70,229,.25);
+  }
+  @media (min-width:640px){ .project-card{ border-radius:50px; padding:1.5rem; } }
+  @media (min-width:768px){ .project-card{ border-radius:60px; padding:2rem; } }
+
+  .portfolio-filters{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:.6rem;
+    margin:1.5rem auto 2.5rem; max-width:1100px; padding:0 1.25rem;
+  }
+  .portfolio-filter-btn{
+    background:transparent; border:1px solid #333; color:var(--ink);
+    border-radius:999px; padding:.5rem 1.2rem; font-size:.75rem;
+    text-transform:uppercase; letter-spacing:.08em; opacity:.7;
+    transition:all .25s ease; cursor:pointer;
+  }
+  .portfolio-filter-btn:hover{ opacity:1; border-color:#4F46E5; }
+  .portfolio-filter-btn.active{
+    background:#4F46E5; border-color:#4F46E5; opacity:1;
+  }
+
+  .project-media-badge{
+    display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem;
+    text-transform:uppercase; letter-spacing:.06em; opacity:.55;
+    border:1px solid #333; border-radius:999px; padding:.3rem .7rem;
+    margin-top:.5rem;
+  }
+  .view-hint{
+    display:inline-flex; align-items:center; gap:.45rem; font-size:.8rem;
+    text-transform:uppercase; letter-spacing:.08em; color:#a5a0ff;
+    margin-top:.6rem; font-weight:800;
+    animation:hintZoom 1.8s ease-in-out infinite;
+  }
+  .view-hint .arrow{ display:inline-block; animation:hintBounce 1.4s ease-in-out infinite; }
+  @keyframes hintZoom{
+    0%, 100%{ transform:scale(1); }
+    50%{ transform:scale(1.06); }
+  }
+  @keyframes hintBounce{
+    0%, 100%{ transform:translateX(0); }
+    50%{ transform:translateX(6px); }
+  }
+
+  #back-to-top{
+    position:fixed; bottom:1.5rem; right:1.5rem; z-index:150;
+    width:44px; height:44px; border-radius:50%; background:#4F46E5; color:#fff;
+    border:none; font-size:1.2rem; cursor:pointer; opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease; box-shadow:0 4px 16px rgba(0,0,0,.4);
+  }
+  #back-to-top.visible{ opacity:1; pointer-events:auto; }
+  #back-to-top:hover{ transform:translateY(-3px); }
+
+  .project-top{
+    display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;
+  }
+  .project-num{ font-weight:900; font-size:clamp(2.2rem,7vw,90px); line-height:1; }
+  .project-meta{ flex:1; min-width:120px; }
+  .project-category{ text-transform:uppercase; letter-spacing:.15em; font-size:.75rem; opacity:.6; }
+  .project-name{ text-transform:uppercase; font-weight:600; font-size:clamp(1.1rem,2.5vw,1.8rem); }
+  .project-desc{
+    color:var(--ink); opacity:.75; font-weight:300; line-height:1.55;
+    max-width:640px; margin-bottom:1.25rem; font-size:clamp(0.85rem,1.5vw,1.05rem);
+  }
+
+  .project-grid{ display:flex; gap:.75rem; }
+  .project-col1{ width:40%; display:flex; flex-direction:column; gap:.75rem; }
+  .project-col2{ width:60%; }
+  .project-col1 img, .project-col1 video, .project-col2 img, .project-col2 video{
+    overflow:hidden; transition:transform .5s ease;
+  }
+  .project-card:hover .project-col1 img, .project-card:hover .project-col1 video,
+  .project-card:hover .project-col2 img, .project-card:hover .project-col2 video{
+    transform:scale(1.04);
+  }
+  .project-col1 img:first-child, .project-col1 video:first-child{ height:clamp(130px,16vw,230px); width:100%; object-fit:cover; border-radius:40px; }
+  .project-col1 img:last-child, .project-col1 video:last-child{ height:clamp(160px,22vw,340px); width:100%; object-fit:cover; border-radius:40px; }
+  .project-col2 img, .project-col2 video{ height:100%; width:100%; object-fit:cover; border-radius:40px; min-height:300px; }
+  @media (min-width:640px){ .project-col1 img, .project-col2 img, .project-col1 video, .project-col2 video{ border-radius:50px; } }
+  @media (min-width:768px){ .project-col1 img, .project-col2 img, .project-col1 video, .project-col2 video{ border-radius:60px; } }
+
+  /* ================= CONTACT ================= */
+  .contact-section{
+    position:relative; z-index:20; background:#0A0A0F;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:6rem 1.25rem 5rem; overflow:hidden;
+  }
+  .contact-section::before{
+    content:'';
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:radial-gradient(ellipse 60% 50% at 50% 20%, rgba(79,70,229,0.25), transparent 65%);
+  }
+  .contact-section > *{ position:relative; z-index:1; }
+  .contact-intro{
+    color:var(--ink); opacity:.75; font-weight:300; text-transform:uppercase;
+    letter-spacing:.1em; margin-top:1rem; font-size:clamp(0.9rem,1.6vw,1.25rem);
+  }
+  .contact-details{
+    display:flex; flex-direction:column; gap:.75rem; align-items:center;
+    margin-top:2.5rem;
+  }
+  @media (min-width:640px){ .contact-details{ flex-direction:row; gap:2rem; } }
+  .contact-link{
+    color:var(--ink); font-weight:500; letter-spacing:.03em;
+    font-size:clamp(1rem,2vw,1.35rem); transition:opacity .2s ease;
+    border-bottom:1px solid rgba(215,226,234,0.25); padding-bottom:2px;
+  }
+  .contact-link:hover{ opacity:.7; }
+  .contact-socials{
+    display:flex; gap:1.5rem; flex-wrap:wrap; justify-content:center;
+    margin-top:2.5rem;
+  }
+  .social-link{
+    color:var(--ink); opacity:.7; font-weight:400; text-transform:uppercase;
+    letter-spacing:.1em; font-size:.85rem; transition:opacity .2s ease;
+  }
+  .social-link:hover{ opacity:1; }
+
+  footer.site-footer{
+    text-align:center; padding:2rem; color:var(--ink); opacity:.4; font-size:.8rem;
+    text-transform:uppercase; letter-spacing:.2em; background:#0A0A0F;
+  }
+
+  .lightbox-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.85);
+    z-index:200; align-items:center; justify-content:center; padding:.6rem;
+    overflow-y:auto;
+  }
+  @media (min-width:640px){ .lightbox-overlay{ padding:1.5rem; } }
+  .lightbox-panel{
+    background:#0f0e16; border:1px solid #2a2938; border-radius:16px;
+    padding:1.1rem; max-width:1040px; width:100%; max-height:90vh; overflow-y:auto;
+    position:relative; margin:auto;
+  }
+  @media (min-width:640px){ .lightbox-panel{ padding:1.75rem; } }
+  .lightbox-close{
+    position:absolute; top:.75rem; right:1rem; background:none; border:none;
+    color:var(--ink); font-size:2rem; line-height:1; cursor:pointer; opacity:.6;
+  }
+  .lightbox-close:hover{ opacity:1; }
+  .lightbox-category{
+    text-transform:uppercase; letter-spacing:.1em; font-size:.75rem; opacity:.6;
+  }
+  .lightbox-title{ font-size:1.4rem; margin:.35rem 0 .75rem; }
+  .lightbox-desc{ opacity:.8; line-height:1.6; font-size:.9rem; margin-bottom:1.25rem; }
+  .lightbox-share{ display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+  .lightbox-share button{
+    background:#161522; color:#D7E2EA; border:1px solid #2a2938; border-radius:999px;
+    padding:.5rem 1rem; font-size:.78rem; cursor:pointer; font-family:inherit;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .lightbox-share button:hover{ border-color:#4F46E5; background:#1a1929; }
+  .lightbox-share button.copied{ border-color:#059669; color:#6ee7b7; }
+  .lightbox-media-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:.5rem;
+  }
+  @media (min-width:640px){ .lightbox-media-grid{ gap:.85rem; } }
+  .lightbox-media-item img, .lightbox-media-item .video-wrap{
+    width:100%; border-radius:8px; display:block; background:#000;
+    aspect-ratio:1/1; object-fit:cover; position:relative; overflow:hidden; cursor:pointer;
+  }
+  .lightbox-media-item .video-wrap video{
+    width:100%; height:100%; display:block; object-fit:cover;
+  }
+  @media (min-width:640px){
+    .lightbox-media-item img, .lightbox-media-item .video-wrap{ border-radius:10px; aspect-ratio:auto; }
+    .lightbox-media-item .video-wrap video{ aspect-ratio:auto; }
+  }
+  .play-overlay{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:48px; height:48px; border-radius:50%; background:rgba(79,70,229,.92);
+    color:#fff; border:2px solid rgba(255,255,255,.85); font-size:1.1rem;
+    display:flex; align-items:center; justify-content:center; padding-left:3px;
+    transition:transform .2s ease, background .2s ease; pointer-events:none;
+    box-shadow:0 4px 18px rgba(0,0,0,.5);
+  }
+  @media (min-width:640px){ .play-overlay{ width:60px; height:60px; font-size:1.4rem; } }
+  .video-wrap:hover .play-overlay{ transform:translate(-50%,-50%) scale(1.1); background:#4F46E5; }
+  .video-wrap.playing .play-overlay{ display:none; }
+  .video-wrap.playing video{ background:#000; }
+
+  .lightbox-group{
+    margin-top:1.75rem; padding:1.1rem 1.1rem 1.4rem; border-radius:14px;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--group-color, #4F46E5) 14%, transparent), transparent 60%);
+    border:1px solid color-mix(in srgb, var(--group-color, #4F46E5) 30%, #2a2938);
+    animation:lightboxItemIn .45s ease both;
+  }
+  .lightbox-group-title{
+    font-size:.95rem; text-transform:uppercase; letter-spacing:.12em;
+    margin-bottom:.9rem; padding-left:1rem; position:relative; font-weight:800;
+  }
+  .lightbox-group-title::before{
+    content:''; position:absolute; left:0; top:.2rem; width:10px; height:10px;
+    border-radius:50%; background:var(--group-color, #4F46E5);
+    box-shadow:0 0 8px var(--group-color, #4F46E5);
+    animation:dotPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes dotPulse{
+    0%, 100%{ box-shadow:0 0 6px var(--group-color, #4F46E5); }
+    50%{ box-shadow:0 0 16px var(--group-color, #4F46E5); }
+  }
+  @keyframes lightboxItemIn{
+    from{ opacity:0; transform:translateY(14px) scale(.96); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .lightbox-media-item{
+    animation:lightboxItemIn .4s ease both;
+    transition:transform .25s ease;
+  }
+  .lightbox-media-item:hover{ transform:scale(1.02); }
+
+  .lightbox-files{ display:flex; flex-direction:column; gap:.5rem; }
+  .lightbox-file-link{
+    display:flex; align-items:center; gap:.6rem; padding:.7rem 1rem;
+    background:#161522; border:1px solid #2a2938; border-radius:10px;
+    font-size:.85rem; transition:border-color .2s ease, background .2s ease;
+  }
+  .lightbox-file-link:hover{ border-color:#4F46E5; background:#1a1929; }
+  .file-icon{ font-size:1.1rem; }
+
+  /* ================= FULLSCREEN VIDEO PLAYER ================= */
+  .vp-overlay{
+    position:fixed; inset:0; z-index:9999; background:#000;
+    display:none; flex-direction:column; opacity:0;
+    transition:opacity .25s ease;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+    -webkit-user-select:none; user-select:none; touch-action:manipulation;
+  }
+  .vp-overlay.open{ display:flex; }
+  .vp-overlay.visible{ opacity:1; }
+  .vp-stage{
+    position:relative; flex:1; min-height:0; display:flex;
+    align-items:center; justify-content:center; overflow:hidden;
+  }
+  .vp-stage video{
+    width:100%; height:100%; object-fit:contain; background:#000; display:block;
+  }
+  .vp-spinner{
+    position:absolute; width:46px; height:46px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.18); border-top-color:#6D5DF6;
+    animation:vpSpin .8s linear infinite; display:none; pointer-events:none;
+  }
+  .vp-overlay.loading .vp-spinner{ display:block; }
+  @keyframes vpSpin{ to{ transform:rotate(360deg); } }
+
+  .vp-top, .vp-bottom{
+    position:absolute; left:0; right:0; z-index:3;
+    transition:opacity .28s ease, transform .28s ease;
+  }
+  .vp-top{
+    top:0; padding:calc(.9rem + env(safe-area-inset-top, 0px)) 1rem .9rem;
+    display:flex; align-items:center; gap:.75rem;
+    background:linear-gradient(180deg, rgba(0,0,0,.82), rgba(0,0,0,0));
+  }
+  .vp-bottom{
+    bottom:0; padding:2.5rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    background:linear-gradient(0deg, rgba(0,0,0,.88), rgba(0,0,0,0));
+  }
+  .vp-overlay.hide-ui .vp-top{ opacity:0; transform:translateY(-12px); pointer-events:none; }
+  .vp-overlay.hide-ui .vp-bottom{ opacity:0; transform:translateY(12px); pointer-events:none; }
+  .vp-overlay.hide-ui .vp-center{ opacity:0; pointer-events:none; }
+
+  .vp-btn{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    color:#fff; width:42px; height:42px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:background .2s ease, transform .15s ease, opacity .2s ease;
+    padding:0;
+  }
+  .vp-btn:hover{ background:rgba(255,255,255,.18); }
+  .vp-btn:active{ transform:scale(.92); }
+  .vp-btn svg{ width:20px; height:20px; fill:currentColor; }
+  .vp-btn[disabled]{ opacity:.25; pointer-events:none; }
+  .vp-label{ min-width:0; flex:1; }
+  .vp-label .vp-name{
+    font-size:.92rem; font-weight:700; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .vp-label .vp-sub{
+    font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+    opacity:.55; margin-top:.15rem; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .vp-center{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    z-index:3; width:74px; height:74px; border-radius:50%;
+    background:rgba(79,70,229,.92); border:2px solid rgba(255,255,255,.85);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 8px 34px rgba(0,0,0,.6);
+    transition:opacity .25s ease, transform .18s ease, background .2s ease;
+  }
+  .vp-center:hover{ background:#4F46E5; }
+  .vp-center:active{ transform:translate(-50%,-50%) scale(.93); }
+  .vp-center svg{ width:30px; height:30px; fill:currentColor; }
+  .vp-overlay.loading .vp-center{ opacity:0; pointer-events:none; }
+
+  .vp-seek{ position:relative; height:26px; display:flex; align-items:center; cursor:pointer; }
+  .vp-seek-track{
+    position:relative; width:100%; height:4px; border-radius:99px;
+    background:rgba(255,255,255,.22); overflow:hidden;
+    transition:height .15s ease;
+  }
+  .vp-seek:hover .vp-seek-track, .vp-seek.dragging .vp-seek-track{ height:6px; }
+  .vp-seek-buffer{
+    position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:rgba(255,255,255,.3);
+  }
+  .vp-seek-fill{
+    position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:linear-gradient(90deg,#6D5DF6,#4F46E5);
+  }
+  .vp-seek-knob{
+    position:absolute; top:50%; left:0; width:13px; height:13px; border-radius:50%;
+    background:#fff; transform:translate(-50%,-50%); pointer-events:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.6); opacity:0; transition:opacity .15s ease;
+  }
+  .vp-seek:hover .vp-seek-knob, .vp-seek.dragging .vp-seek-knob{ opacity:1; }
+  .vp-controls{
+    display:flex; align-items:center; gap:.6rem; margin-top:.35rem;
+  }
+  .vp-time{
+    font-size:.75rem; font-variant-numeric:tabular-nums; opacity:.85;
+    letter-spacing:.03em; flex:none;
+  }
+  .vp-spacer{ flex:1; }
+  .vp-count{ font-size:.72rem; opacity:.55; letter-spacing:.06em; flex:none; }
+  @media (max-width:420px){
+    .vp-btn{ width:38px; height:38px; }
+    .vp-btn svg{ width:18px; height:18px; }
+    .vp-center{ width:64px; height:64px; }
+    .vp-center svg{ width:26px; height:26px; }
+    .vp-count{ display:none; }
+  }
+
+  .home-video-wrap{ padding:0 1.5rem; margin:1.25rem 0; }
+  .home-video-wrap video{
+    width:100%; max-width:640px; margin:0 auto; display:block;
+    border-radius:20px; background:#000; aspect-ratio:16/9; object-fit:cover;
+  }
+  @media (min-width:768px){ .home-video-wrap{ padding:0 2.5rem; margin:1.75rem 0; } }
+
+  /* ================= SMALL PHONES ================= */
+  @media (max-width:480px){
+    .hero-heading-wrap{ text-align:center; }
+    .hero-bottom{ flex-direction:column; align-items:center; text-align:center; gap:1.1rem; }
+    .hero-bottom p{ text-align:center; max-width:280px; }
+    .marquee-row img{ width:220px; height:150px; }
+    .project-grid{ flex-direction:column; }
+    .project-col1{ width:100%; flex-direction:row; }
+    .project-col1 img, .project-col1 video{ width:50%; }
+    .project-col2{ width:100%; }
+    .project-col1 img:first-child, .project-col1 img:last-child,
+    .project-col1 video:first-child, .project-col1 video:last-child{ height:140px; }
+    .project-col2 img, .project-col2 video{ min-height:180px; }
+    .project-card{ padding:1.25rem; }
+    .contact-details{ gap:1rem; }
+    .btn-contact, .btn-live{ padding:.7rem 1.5rem; font-size:.75rem; }
+    .home-video-wrap video{ border-radius:14px; }
+  }
+
+  /* ================= POLISH ANIMATIONS ================= */
+  @keyframes floatY{
+    0%, 100%{ transform:translateY(0); }
+    50%{ transform:translateY(-10px); }
+  }
+  .about-deco{ animation:floatY 4.5s ease-in-out infinite; }
+  .deco-p59, .deco-group{ animation-delay:.8s; }
+
+  @keyframes pulseGlow{
+    0%, 100%{ box-shadow:0 0 0 0 rgba(79,70,229,.45); }
+    50%{ box-shadow:0 0 0 10px rgba(79,70,229,0); }
+  }
+  .btn-contact{ animation:pulseGlow 2.6s ease-out infinite; }
+
+  .navbar a{ position:relative; }
+  .navbar a::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:1px;
+    background:currentColor; transition:width .25s ease;
+  }
+  .navbar a:hover::after{ width:100%; }
+
+  .service-item, .project-card{ transition:transform .3s ease; }
+  .service-item:hover{ transform:translateX(4px); }
+  .project-card:hover{ transform:translateY(-4px); }
 </style>
 </head>
 <body>
+<div id="root">
+<div class="app-wrap">
 
-<div id="login-box">
-  <h1>Admin Login</h1>
-  <label>Email</label>
-  <input id="email" type="email" />
-  <label>Password</label>
-  <input id="password" type="text" style="-webkit-text-security:disc;" />
-  <button onclick="login()">Log in</button>
-  <p id="login-status" style="margin-top:1rem; font-size:.85rem;"></p>
-</div>
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <nav class="navbar fade-in" id="navbar-links" style="--fdelay:0s; --fy:-20px;">
+      <a href="#about">About</a>
+      <a href="#services">Service</a>
+      <a href="#portfolio">Portfolio</a>
+      <a href="#contact">Contact</a>
+    </nav>
 
-<div id="editor-box" style="display:none;">
-  <h1>Edit Portfolio Content</h1>
+    <div class="hero-heading-wrap fade-in" style="--fdelay:.15s; --fy:40px;">
+      <h1 class="hero-heading" id="hero-heading-el">Hi, I&apos;m Kool</h1>
+    </div>
 
-  <h2>Navigation</h2>
-  <div id="nav-list"></div>
-  <button class="secondary" onclick="addNav()">+ Add nav link</button>
+    <div class="home-video-wrap fade-in" id="home-video-section" style="display:none; --fdelay:.25s; --fy:20px;">
+      <video id="home-video" controls playsinline
+             controlslist="nodownload noplaybackrate noremoteplayback"
+             disablepictureinpicture disableremoteplayback
+             oncontextmenu="return false;"></video>
+    </div>
 
-  <h2>Home / Hero</h2>
-  <label>Heading</label>
-  <input type="text" id="hero-heading" />
-  <label>Tagline</label>
-  <input type="text" id="hero-tagline" />
+    <div class="hero-bottom">
+          <p class="fade-in hero-tagline" id="hero-tagline-el" style="--fdelay:.35s; --fy:20px;">turning strategy into growth — powered by data, creativity, and AI</p>
+      <div class="fade-in" style="--fdelay:.5s; --fy:20px;">
+        <button class="btn-contact" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Me</button>
+      </div>
+    </div>
+  </section>
 
-  <h2>Home Video (plays right after "Hi, I'm Kool")</h2>
-  <div id="home-video-preview"></div>
-  <input type="file" accept="video/*" onchange="handleHomeVideo(event)">
-  <button class="secondary" onclick="removeHomeVideo()">Remove video</button>
+  <!-- ================= MARQUEE ================= -->
+  <section class="marquee-section" id="marquee-section">
+    <div class="marquee-row" id="marquee-row1"></div>
+    <div class="marquee-row" id="marquee-row2"></div>
+  </section>
 
-  <h2>Gallery (horizontal image slider, shown right after Home)</h2>
-  <div id="gallery-list"></div>
-  <button class="secondary" onclick="addGalleryImage()">+ Add image</button>
+  <!-- ================= ABOUT ================= -->
+  <section class="about" id="about">
+    <img class="about-deco deco-moon fade-in" style="--fdelay:.1s; --fx:-80px; --fy:0px; --fd:.9s;" src="https://shrug-person-78902957.figma.site/_components/v2/ebb2b8f25d8e24d5f0a5ca8af4c950de81aa2fd7/moon_icon.11395d36.png" alt="" />
+    <img class="about-deco deco-p59 fade-in" style="--fdelay:.25s; --fx:-80px; --fy:0px; --fd:.9s;" src="https://shrug-person-78902957.figma.site/_components/v2/ebb2b8f25d8e24d5f0a5ca8af4c950de81aa2fd7/p59_1.4659672e.png" alt="" />
+    <img class="about-deco deco-lego fade-in" style="--fdelay:.15s; --fx:80px; --fy:0px; --fd:.9s;" src="https://shrug-person-78902957.figma.site/_components/v2/ebb2b8f25d8e24d5f0a5ca8af4c950de81aa2fd7/lego_icon-1.703bb594.png" alt="" />
+    <img class="about-deco deco-group fade-in" style="--fdelay:.3s; --fx:80px; --fy:0px; --fd:.9s;" src="https://shrug-person-78902957.figma.site/_components/v2/ebb2b8f25d8e24d5f0a5ca8af4c950de81aa2fd7/Group_134-1.2e04f3ce.png" alt="" />
 
-  <h2>About</h2>
-  <label>About text</label>
-  <textarea id="about-text" style="min-height:140px;"></textarea>
+    <h2 class="section-heading hero-heading fade-in" style="--fdelay:0s; --fy:40px;">About me</h2>
 
-  <h2>Services</h2>
-  <div id="services-list"></div>
-  <button class="secondary" onclick="addService()">+ Add service</button>
+    <div class="about-text-block">
+      <p class="about-copy" id="about-copy">I&apos;m Kool, a digital marketing specialist focused on social media growth, paid campaigns, and content strategy that turn visibility into measurable results. Alongside this, I bring AI as an added edge — using it to speed up content creation, automate workflows, and sharpen decision-making across every project. The result is marketing that moves faster, connects deeper, and adapts smarter for every brand I work with.</p>
+    </div>
 
-  <h2>Portfolio Projects</h2>
-  <div id="projects-list"></div>
-  <button class="secondary" onclick="addProject()">+ Add project</button>
+    <div class="about-btn-wrap fade-in" style="--fdelay:0s; --fy:20px;">
+      <button class="btn-contact" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Me</button>
+    </div>
+  </section>
 
-  <h2>Contact</h2>
-  <label>Email</label>
-  <input type="email" id="contact-email" />
-  <label>Phone numbers</label>
-  <div id="phones-list"></div>
-  <button class="secondary" onclick="addPhone()">+ Add phone</button>
-  <label style="margin-top:1.5rem;">Social links</label>
-  <div id="socials-list"></div>
-  <button class="secondary" onclick="addSocial()">+ Add social link</button>
+  <!-- ================= SERVICES ================= -->
+  <section class="services" id="services">
+    <h2 class="section-heading fade-in" style="--fdelay:0s; --fy:40px;">Services</h2>
+    <div class="services-list" id="services-list"></div>
+  </section>
 
-  <h2>Footer</h2>
-  <label>Footer text</label>
-  <input type="text" id="footer-text" />
+  <!-- ================= PROJECTS ================= -->
+  <section class="projects" id="portfolio">
+    <h2 class="section-heading hero-heading fade-in" style="--fdelay:0s; --fy:40px;">Portfolio</h2>
+    <div class="portfolio-filters fade-in" id="portfolio-filters" style="--fdelay:.1s; --fy:20px;"></div>
+    <div id="projects-stack"></div>
+  </section>
 
-  <div id="save-bar">
-    <button onclick="save()">Save all changes</button>
-    <p id="status"></p>
-    <div class="upload-progress" id="upload-progress"><div class="upload-progress-bar" id="upload-progress-bar"></div></div>
+  <section class="contact-section" id="contact">
+    <h2 class="section-heading hero-heading fade-in" style="--fdelay:0s; --fy:40px;">Contact</h2>
+    <p class="fade-in contact-intro" style="--fdelay:.1s; --fy:20px;">Let&apos;s build something that grows.</p>
+
+    <div class="contact-details fade-in" style="--fdelay:.2s; --fy:20px;">
+      <a href="mailto:koolwaktole@gmail.com" class="contact-link" id="contact-email-link">koolwaktole@gmail.com</a>
+      <span id="contact-phones" style="display:contents;">
+        <a href="tel:+251909333307" class="contact-link">+251 909 333 307</a>
+        <a href="tel:+251910852528" class="contact-link">+251 910 852 528</a>
+      </span>
+    </div>
+
+    <div class="contact-socials fade-in" id="contact-socials-list" style="--fdelay:.3s; --fy:20px;">
+      <a href="#" class="social-link">LinkedIn</a>
+      <a href="#" class="social-link">Instagram</a>
+      <a href="#" class="social-link">YouTube</a>
+      <a href="#" class="social-link">TikTok</a>
+    </div>
+
+    <div class="fade-in" style="--fdelay:.4s; --fy:20px; margin-top:2.5rem;">
+      <button class="btn-contact" id="contact-email-btn" onclick="window.location.href='mailto:koolwaktole@gmail.com'">Email Me</button>
+    </div>
+  </section>
+
+  <!-- ================= PROJECT MEDIA LIGHTBOX ================= -->
+  <button id="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top">↑</button>
+
+  <div id="project-lightbox" class="lightbox-overlay" onclick="if(event.target===this) closeProjectMedia()">
+    <div class="lightbox-panel">
+      <button class="lightbox-close" onclick="closeProjectMedia()" aria-label="Close">&times;</button>
+      <div class="lightbox-category" id="lightbox-category"></div>
+      <h3 class="lightbox-title" id="lightbox-title"></h3>
+      <p class="lightbox-desc" id="lightbox-desc"></p>
+      <div class="lightbox-share">
+        <button type="button" id="lightbox-copy" onclick="copyProjectLink()">🔗 Copy link</button>
+        <button type="button" onclick="closeProjectMedia(); document.getElementById('portfolio').scrollIntoView({behavior:'smooth'})">← All projects</button>
+      </div>
+      <div class="lightbox-media-grid" id="lightbox-media"></div>
+      <div id="lightbox-groups"></div>
+      <div id="lightbox-audio"></div>
+      <div id="lightbox-live-link"></div>
+    </div>
   </div>
+
+  <!-- ===== fullscreen video player ===== -->
+  <div id="video-player" class="vp-overlay" aria-hidden="true">
+    <div class="vp-stage" id="vp-stage">
+      <video id="vp-video" playsinline preload="metadata"
+             controlslist="nodownload noremoteplayback noplaybackrate"
+             disablepictureinpicture disableremoteplayback
+             oncontextmenu="return false;"></video>
+      <div class="vp-spinner"></div>
+
+      <div class="vp-top">
+        <button class="vp-btn" id="vp-back" aria-label="Back">
+          <svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg>
+        </button>
+        <div class="vp-label">
+          <div class="vp-name" id="vp-name"></div>
+          <div class="vp-sub" id="vp-sub"></div>
+        </div>
+        <button class="vp-btn" id="vp-close" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+        </button>
+      </div>
+
+      <button class="vp-center" id="vp-center" aria-label="Play or pause">
+        <svg id="vp-center-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+
+      <div class="vp-bottom">
+        <div class="vp-seek" id="vp-seek">
+          <div class="vp-seek-track">
+            <div class="vp-seek-buffer" id="vp-buffer"></div>
+            <div class="vp-seek-fill" id="vp-fill"></div>
+          </div>
+          <div class="vp-seek-knob" id="vp-knob"></div>
+        </div>
+        <div class="vp-controls">
+          <button class="vp-btn" id="vp-toggle" aria-label="Play or pause">
+            <svg id="vp-toggle-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="vp-btn" id="vp-prev" aria-label="Previous video">
+            <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+          </button>
+          <button class="vp-btn" id="vp-next" aria-label="Next video">
+            <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+          </button>
+          <div class="vp-time"><span id="vp-current">0:00</span> / <span id="vp-duration">0:00</span></div>
+          <div class="vp-spacer"></div>
+          <div class="vp-count" id="vp-count"></div>
+          <button class="vp-btn" id="vp-mute" aria-label="Mute">
+            <svg id="vp-mute-icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1c3 .9 5 3.5 5 6.7s-2 5.8-5 6.7v2.1c4.1-1 7-4.5 7-8.8s-2.9-7.8-7-8.8z"/></svg>
+          </button>
+          <button class="vp-btn" id="vp-fullscreen" aria-label="Fullscreen">
+            <svg id="vp-fs-icon" viewBox="0 0 24 24"><path d="M5 5h5V3H3v7h2zm9-2v2h5v5h2V3zM5 14H3v7h7v-2H5zm14 5h-5v2h7v-7h-2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer" id="site-footer">Kool — Digital Marketing &amp; AI Specialist &copy; 2026</footer>
+</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* =========================================================
+   0. SUPABASE — reads content saved from admin.html.
+      Fill these in after creating your Supabase project
+      (Project Settings > API).
+   ========================================================= */
 const SUPABASE_URL = 'https://kyozprnqpzzrmyvtdxbu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_h7g2LDRQY_SeVyCF6lE6FA_F-Fws8E5';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let state = {
-  nav: [], hero: {heading:'', tagline:''}, homeVideo: '', about: '', gallery: [],
-  services: [], projects: [],
-  contact: { email:'', phones:[], socials:[] },
-  footer: ''
+/* =========================================================
+   1. FADE-IN ON SCROLL (IntersectionObserver, replicates
+      Framer Motion FadeIn: once true, margin 50px, amount 0)
+   ========================================================= */
+const fadeEls = document.querySelectorAll('.fade-in');
+const fadeObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('in-view');
+      fadeObserver.unobserve(entry.target);
+    }
+  });
+},{ rootMargin:'50px 0px 50px 0px', threshold:0 });
+fadeEls.forEach(el=>fadeObserver.observe(el));
+
+/* =========================================================
+   2. MAGNET (mouse-following magnetic hover effect)
+   ========================================================= */
+document.querySelectorAll('.magnet').forEach(magnet=>{
+  const strength = parseFloat(magnet.dataset.strength || '3');
+  const padding = parseFloat(magnet.dataset.padding || '150');
+  magnet.style.transition = 'transform 0.6s ease-in-out';
+  magnet.style.willChange = 'transform';
+
+  window.addEventListener('mousemove', (e)=>{
+    const rect = magnet.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const dist = Math.hypot(dx,dy);
+    const maxDist = Math.max(rect.width, rect.height)/2 + padding;
+
+    if(dist < maxDist){
+      magnet.style.transition = 'transform 0.3s ease-out';
+      magnet.style.transform = `translate3d(${dx/strength}px, ${dy/strength}px, 0)`;
+    } else {
+      magnet.style.transition = 'transform 0.6s ease-in-out';
+      magnet.style.transform = 'translate3d(0,0,0)';
+    }
+  }, { passive:true });
+});
+
+/* =========================================================
+   3. GALLERY — scroll-driven horizontal image slider,
+      images come from admin.html (falls back to defaults)
+   ========================================================= */
+function pexelsUrl(id){
+  return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=860&h=560&fit=crop`;
+}
+const galleryDefaultIds = [
+  6476260, 8386437, 3183131, 17484970, 6476785, 4604607, 7693201, 8566526, 6476258, 33206676, 6772076,
+  17483874, 7108465, 8849295, 6476372, 8294663, 5716032, 6458062, 8438879, 7681678, 8566473
+];
+const galleryDefault = galleryDefaultIds.map(pexelsUrl);
+
+const row1 = document.getElementById('marquee-row1');
+const row2 = document.getElementById('marquee-row2');
+function fillRow(el, imgs){
+  const tripled = [...imgs, ...imgs, ...imgs];
+  el.innerHTML = tripled.map(src=>`<img src="${src}" loading="lazy" alt="" />`).join('');
+}
+function renderGallery(urls){
+  const half = Math.ceil(urls.length / 2) || 1;
+  fillRow(row1, urls.slice(0, half));
+  fillRow(row2, urls.slice(half));
+}
+
+const marqueeSection = document.getElementById('marquee-section');
+function updateMarquee(){
+  const sectionTop = marqueeSection.offsetTop;
+  const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.3;
+  row1.style.transform = `translateX(${offset - 200}px)`;
+  row2.style.transform = `translateX(${-(offset - 200)}px)`;
+}
+window.addEventListener('scroll', updateMarquee, { passive:true });
+
+/* =========================================================
+   4. ANIMATED TEXT — character-by-character scroll reveal
+   ========================================================= */
+const aboutCopyEl = document.getElementById('about-copy');
+let charSpans = [];
+let totalChars = 0;
+
+function updateAnimatedText(){
+  if(!totalChars) return;
+  const rect = aboutCopyEl.getBoundingClientRect();
+  const vh = window.innerHeight;
+  // offsets approximate framer-motion ['start 0.8','end 0.2']
+  const start = vh * 0.8;
+  const end = -rect.height + vh * 0.2;
+  const total = start - end;
+  let progress = (start - rect.top) / total;
+  progress = Math.min(1, Math.max(0, progress));
+
+  charSpans.forEach((span, i)=>{
+    const threshold = i / totalChars;
+    const local = Math.min(1, Math.max(0, (progress - threshold) * totalChars * 0.6 + 0.5));
+    span.style.opacity = (0.45 + 0.55 * local).toFixed(2);
+  });
+}
+function initAboutAnimation(){
+  const text = aboutCopyEl.textContent;
+  aboutCopyEl.innerHTML = text.split('').map(ch=>`<span>${ch === ' ' ? ' ' : ch}</span>`).join('');
+  charSpans = aboutCopyEl.querySelectorAll('span');
+  totalChars = charSpans.length;
+  updateAnimatedText();
+}
+window.addEventListener('scroll', updateAnimatedText, { passive:true });
+window.addEventListener('resize', updateAnimatedText);
+
+/* =========================================================
+   5. SERVICES LIST
+   ========================================================= */
+// Defaults — used until/unless content is saved from admin.html
+const servicesDefault = [
+  { num:'01', name:'Digital Marketing & Growth', desc:'A complete approach to online visibility and growth — search optimization, paid advertising, content planning, and performance analytics working together to attract the right audience and turn attention into results.' },
+  { num:'02', name:'AI-Assisted Design & Development', desc:'Modern web and product design accelerated by AI — from concept to a working interface — balancing speed with the design judgment needed to build experiences people actually enjoy using.' },
+  { num:'03', name:'Video & Graphic Design', desc:'Visual storytelling built to hold attention — video editing, motion graphics, and brand visuals crafted to communicate a message clearly and consistently across every platform.' },
+];
+// NOTE: these three are placeholder case studies mapped to the 3 service
+// pillars below — swap in real project names, images, and results when ready.
+const projectsDefault = [
+  {
+    num:'01', category:'Digital Marketing & Growth', name:'Brand Growth Campaign',
+    desc:'A full-funnel social and paid media push — audience research, content calendar, and ad targeting rebuilt from the ground up to lift reach and engagement across every channel.',
+    col1a: pexelsUrl(6476785),
+    col1b: pexelsUrl(6476258),
+    col2: pexelsUrl(3194519)
+  },
+  {
+    num:'02', category:'AI-Assisted Design & Development', name:'AI-Powered Web Experience',
+    desc:'A product interface designed and prototyped with AI tooling in the loop — faster iteration on layout and flow, without sacrificing the polish of a hand-crafted UI.',
+    col1a: pexelsUrl(8566526),
+    col1b: pexelsUrl(8982663),
+    col2: pexelsUrl(8386437)
+  },
+  {
+    num:'03', category:'Video & Graphic Design', name:'Creative Content Reel',
+    desc:'Short-form video and motion graphics edited for retention — clean cuts, on-brand visuals, and pacing built to hold attention in the first three seconds.',
+    col1a: pexelsUrl(31718971),
+    col1b: pexelsUrl(8100065),
+    col2: pexelsUrl(11063289)
+  }
+];
+
+let totalCards = 0;
+const stackEl = document.getElementById('projects-stack');
+
+function renderServices(services){
+  const servicesList = document.getElementById('services-list');
+  servicesList.innerHTML = services.map((s,i)=>`
+    <div class="service-item fade-in" style="--fdelay:${(i*0.1).toFixed(1)}s; --fy:30px;">
+      <div class="service-num">${s.num}</div>
+      <div class="service-body">
+        <h3>${s.name}</h3>
+        <p>${s.desc}</p>
+      </div>
+    </div>
+  `).join('');
+  document.querySelectorAll('.services-list .fade-in').forEach(el=>fadeObserver.observe(el));
+}
+
+function escAttr(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function isVideoUrl(url){
+  return /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url || '');
+}
+function mediaTag(url, alt){
+  if(!url) return '';
+  return isVideoUrl(url)
+    ? `<video src="${url}" autoplay muted loop playsinline disablepictureinpicture controlslist="nodownload" oncontextmenu="return false;"></video>`
+    : `<img src="${url}" alt="${alt}" loading="lazy" />`;
+}
+function mediaTagPlayable(url, alt){
+  if(!url) return '';
+  if(isVideoUrl(url)){
+    return `
+      <div class="video-wrap" data-video="${escAttr(url)}" data-label="${escAttr(alt || '')}"
+           onclick="openVideoPlayer(this)" onpointerdown="vpWarm({url:this.dataset.video})" oncontextmenu="return false;">
+        <video src="${url}#t=0.1" playsinline preload="metadata" muted
+               disablepictureinpicture controlslist="nodownload"></video>
+        <button class="play-overlay" aria-label="Play video">▶</button>
+      </div>`;
+  }
+  return `<img src="${url}" alt="${alt}" loading="lazy" oncontextmenu="return false;" />`;
+}
+
+let currentProjects = [];
+let allProjects = [];
+let activeFilter = 'All';
+
+function countMedia(p){
+  const items = [p.col1a, p.col1b, p.col2].filter(Boolean);
+  const videos = items.filter(isVideoUrl).length;
+  const images = items.length - videos;
+  const parts = [];
+  if(images) parts.push(`${images} photo${images>1?'s':''}`);
+  if(videos) parts.push(`${videos} video${videos>1?'s':''}`);
+  if(p.audioUrl) parts.push('audio');
+  const groupCount = (p.mediaGroups || []).filter(g=>g.items && g.items.length).length;
+  if(groupCount) parts.push(`${groupCount} categor${groupCount>1?'ies':'y'}`);
+  return parts.join(' · ') || 'No media yet';
+}
+
+function renderFilters(){
+  const categories = ['All', ...new Set(allProjects.map(p=>p.category).filter(Boolean))];
+  document.getElementById('portfolio-filters').innerHTML = categories.map(cat=>`
+    <button class="portfolio-filter-btn ${cat===activeFilter?'active':''}" onclick="filterProjects('${cat.replace(/'/g,"\\'")}')">${cat}</button>
+  `).join('');
+}
+function filterProjects(category){
+  activeFilter = category;
+  renderFilters();
+  const filtered = category === 'All' ? allProjects : allProjects.filter(p=>p.category===category);
+  renderProjects(filtered);
+  updateProjectScale();
+}
+
+function renderProjects(projects){
+  currentProjects = projects;
+  totalCards = projects.length;
+  stackEl.innerHTML = projects.map((p,i)=>`
+    <div class="project-card-container" style="top:calc(6rem + ${i*28}px); z-index:${i+1};">
+      <div class="project-card" id="proj-card-${i}" onclick="openProjectMedia(${i})" style="cursor:pointer;">
+        <div class="project-top">
+          <div class="project-num hero-heading">${p.num}</div>
+          <div class="project-meta">
+            <div class="project-category">${p.category}</div>
+            <div class="project-name">${p.name}</div>
+          </div>
+          <button class="btn-live" onclick="event.stopPropagation(); openProjectMedia(${i})">Live Project</button>
+        </div>
+        <p class="project-desc">${p.desc}</p>
+        <span class="project-media-badge">${countMedia(p)}</span>
+        <div class="view-hint">Click to view the project <span class="arrow">→</span></div>
+        <div class="project-grid">
+          <div class="project-col1">
+            ${mediaTag(p.col1a, p.name + ' detail 1')}
+            ${mediaTag(p.col1b, p.name + ' detail 2')}
+          </div>
+          <div class="project-col2">
+            ${mediaTag(p.col2, p.name + ' hero')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ---------- fullscreen video player ---------- */
+const VP = {
+  overlay:  document.getElementById('video-player'),
+  stage:    document.getElementById('vp-stage'),
+  video:    document.getElementById('vp-video'),
+  name:     document.getElementById('vp-name'),
+  sub:      document.getElementById('vp-sub'),
+  center:   document.getElementById('vp-center'),
+  centerIc: document.getElementById('vp-center-icon'),
+  toggle:   document.getElementById('vp-toggle'),
+  toggleIc: document.getElementById('vp-toggle-icon'),
+  prev:     document.getElementById('vp-prev'),
+  next:     document.getElementById('vp-next'),
+  seek:     document.getElementById('vp-seek'),
+  fill:     document.getElementById('vp-fill'),
+  buffer:   document.getElementById('vp-buffer'),
+  knob:     document.getElementById('vp-knob'),
+  current:  document.getElementById('vp-current'),
+  duration: document.getElementById('vp-duration'),
+  count:    document.getElementById('vp-count'),
+  mute:     document.getElementById('vp-mute'),
+  muteIc:   document.getElementById('vp-mute-icon'),
+  fsBtn:    document.getElementById('vp-fullscreen'),
+  back:     document.getElementById('vp-back'),
+  close:    document.getElementById('vp-close'),
 };
 
-/* ---------- auth ---------- */
-async function login(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  const loginStatus = document.getElementById('login-status');
-  if(error){ loginStatus.textContent = error.message; }
-  else { showEditor(); }
+const ICON_PLAY  = 'M8 5v14l11-7z';
+const ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
+const ICON_VOL   = 'M3 9v6h4l5 5V4L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1c3 .9 5 3.5 5 6.7s-2 5.8-5 6.7v2.1c4.1-1 7-4.5 7-8.8s-2.9-7.8-7-8.8z';
+const ICON_MUTED = 'M3 9v6h4l5 5V4L7 9zm18.5-1.1L20.1 6.5 17.6 9l-2.5-2.5-1.4 1.4L16.2 10.4l-2.5 2.5 1.4 1.4 2.5-2.5 2.5 2.5 1.4-1.4-2.5-2.5z';
+const ICON_FS    = 'M5 5h5V3H3v7h2zm9-2v2h5v5h2V3zM5 14H3v7h7v-2H5zm14 5h-5v2h7v-7h-2z';
+const ICON_FSX   = 'M8 8V3H6v3H3v2zm8-5v3h3v2h-5V3zM6 16H3v-2h5v5H6zm10 3v-3h3v-2h-5v5z';
+
+let vpPlaylist = [];
+let vpIndex = 0;
+let vpHideTimer = null;
+let vpDragging = false;
+let vpHistoryPushed = false;
+
+function vpFmt(sec){
+  if(!isFinite(sec) || sec < 0) sec = 0;
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  const s = Math.floor(sec%60);
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+           : `${m}:${String(s).padStart(2,'0')}`;
 }
-supabaseClient.auth.getSession().then(({ data }) => { if(data.session) showEditor(); });
-
-async function showEditor(){
-  document.getElementById('login-box').style.display = 'none';
-  document.getElementById('editor-box').style.display = 'block';
-
-  const { data } = await supabaseClient.from('content').select('*').eq('id', 1).single();
-  if(data){
-    if(data.nav) state.nav = data.nav;
-    if(data.hero) state.hero = data.hero;
-    if(data.home_video) state.homeVideo = data.home_video;
-    if(data.about) state.about = data.about;
-    if(data.gallery) state.gallery = data.gallery;
-    if(data.services) state.services = data.services;
-    if(data.projects) state.projects = data.projects;
-    if(data.contact) state.contact = data.contact;
-    if(data.footer) state.footer = data.footer;
+function vpSetIcon(el, d){ el.querySelector('path').setAttribute('d', d); }
+function vpSyncPlayIcons(){
+  const d = VP.video.paused ? ICON_PLAY : ICON_PAUSE;
+  vpSetIcon(VP.centerIc, d);
+  vpSetIcon(VP.toggleIc, d);
+  VP.center.style.opacity = VP.video.paused ? '1' : '';
+}
+function vpShowUI(){
+  VP.overlay.classList.remove('hide-ui');
+  clearTimeout(vpHideTimer);
+  if(!VP.video.paused){
+    vpHideTimer = setTimeout(()=> VP.overlay.classList.add('hide-ui'), 2600);
   }
-  document.getElementById('hero-heading').value = state.hero.heading || '';
-  document.getElementById('hero-tagline').value = state.hero.tagline || '';
-  document.getElementById('about-text').value = state.about || '';
-  document.getElementById('contact-email').value = state.contact.email || '';
-  document.getElementById('footer-text').value = state.footer || '';
-
-  renderNav(); renderHomeVideo(); renderGallery(); renderServices(); renderProjects(); renderPhones(); renderSocials();
 }
 
-/* ---------- file upload (images, video, or audio) — resumable, with progress ---------- */
-function showUploadProgress(pct){
-  const bar = document.getElementById('upload-progress');
-  const fill = document.getElementById('upload-progress-bar');
-  bar.style.display = 'block';
-  fill.style.width = pct + '%';
-}
-function hideUploadProgress(){
-  document.getElementById('upload-progress').style.display = 'none';
-  document.getElementById('upload-progress-bar').style.width = '0%';
-}
-async function uploadFile(file, onProgress){
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const token = sessionData.session.access_token;
-  const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,'')}`;
-  return new Promise((resolve, reject)=>{
-    const upload = new tus.Upload(file, {
-      endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-      retryDelays: [0, 3000, 5000, 10000],
-      headers: { authorization: `Bearer ${token}`, 'x-upsert': 'false' },
-      uploadDataDuringCreation: true,
-      removeFingerprintOnSuccess: true,
-      metadata: {
-        bucketName: 'portfolio-images',
-        objectName: path,
-        contentType: file.type || 'application/octet-stream',
-        cacheControl: '31536000',
-      },
-      chunkSize: 6 * 1024 * 1024, // required by Supabase's resumable endpoint
-      onError: (error) => reject(error),
-      onProgress: (sent, total) => {
-        if(onProgress) onProgress(Math.round((sent / total) * 100));
-      },
-      onSuccess: () => {
-        const { data } = supabaseClient.storage.from('portfolio-images').getPublicUrl(path);
-        resolve(data.publicUrl);
-      },
-    });
-    upload.start();
-  });
-}
-const uploadImage = uploadFile; // kept for compatibility with existing calls below
+/* open the player from a .video-wrap thumbnail */
+function openVideoPlayer(wrap){
+  const scope = wrap.closest('.lightbox-group') || document.getElementById('lightbox-media') || document;
+  const wraps = Array.from(scope.querySelectorAll('.video-wrap[data-video]'));
+  vpPlaylist = wraps.map(w => ({ url: w.dataset.video, label: w.dataset.label || '' }));
+  vpIndex = Math.max(0, wraps.indexOf(wrap));
 
-async function runUpload(file, onDone){
-  const statusEl = document.getElementById('status');
-  statusEl.textContent = `Uploading ${file.name}...`;
-  showUploadProgress(0);
+  const groupTitle = wrap.closest('.lightbox-group')?.querySelector('.lightbox-group-title')?.textContent || '';
+  VP.sub.textContent = groupTitle || (document.getElementById('lightbox-category').textContent || '');
+
+  VP.overlay.classList.add('open');
+  VP.overlay.setAttribute('aria-hidden','false');
+  requestAnimationFrame(()=> VP.overlay.classList.add('visible'));
+  document.body.style.overflow = 'hidden';
+
+  if(!vpHistoryPushed){
+    try{ history.pushState({ vp:true }, ''); vpHistoryPushed = true; }catch(e){}
+  }
+  vpLoad(vpIndex, true);
+}
+
+function vpLoad(i, autoplay){
+  const item = vpPlaylist[i];
+  if(!item) return;
+  vpIndex = i;
+  VP.name.textContent = item.label || 'Video';
+  VP.count.textContent = vpPlaylist.length > 1 ? `${i+1} / ${vpPlaylist.length}` : '';
+  VP.prev.disabled = i === 0;
+  VP.next.disabled = i === vpPlaylist.length - 1;
+  VP.prev.style.display = VP.next.style.display = vpPlaylist.length > 1 ? '' : 'none';
+
+  VP.overlay.classList.add('loading');
+  VP.fill.style.width = VP.buffer.style.width = '0%';
+  VP.knob.style.left = '0%';
+  VP.current.textContent = VP.duration.textContent = '0:00';
+  VP.video.preload = 'auto';
+  VP.video.src = item.url;
+  VP.video.load();
+  vpWantPlay = !!autoplay;
+  vpStartWhenReady();
+  vpSyncPlayIcons();
+  vpShowUI();
+}
+
+/* start playback only once a few seconds are buffered, so the first play doesn't stutter */
+let vpWantPlay = false;
+function vpBufferedAhead(){
+  const v = VP.video;
+  for(let r = 0; r < v.buffered.length; r++){
+    if(v.currentTime >= v.buffered.start(r) && v.currentTime <= v.buffered.end(r)){
+      return v.buffered.end(r) - v.currentTime;
+    }
+  }
+  return 0;
+}
+function vpStartWhenReady(){
+  if(!vpWantPlay) return;
+  const v = VP.video;
+  const need = Math.min(3, (v.duration || 3) - v.currentTime);
+  if(v.readyState >= 3 && (vpBufferedAhead() >= need || v.readyState === 4)){
+    vpWantPlay = false;
+    v.play().catch(()=>{});
+  }
+}
+VP.video.addEventListener('progress', vpStartWhenReady);
+VP.video.addEventListener('canplay', vpStartWhenReady);
+VP.video.addEventListener('canplaythrough', ()=>{
+  vpStartWhenReady();
+  vpWarm(vpPlaylist[vpIndex + 1]);   // only after the current video is fully ready
+});
+
+/* quietly pre-fetch the next video in the list */
+let vpWarmEl = null;
+function vpWarm(item){
+  if(!item) return;
+  if(!vpWarmEl){
+    vpWarmEl = document.createElement('video');
+    vpWarmEl.muted = true; vpWarmEl.preload = 'auto';
+  }
+  if(vpWarmEl.dataset.src === item.url) return;
+  vpWarmEl.dataset.src = item.url;
+  vpWarmEl.src = item.url;
+  vpWarmEl.load();
+}
+
+function vpTogglePlay(){
+  vpWantPlay = false;
+  if(VP.video.paused) VP.video.play().catch(()=>{});
+  else VP.video.pause();
+  vpSyncPlayIcons();
+  vpShowUI();
+}
+function vpPrev(){ if(vpIndex > 0) vpLoad(vpIndex - 1, true); }
+function vpNext(){ if(vpIndex < vpPlaylist.length - 1) vpLoad(vpIndex + 1, true); }
+
+function closeVideoPlayer(fromPopState){
+  vpWantPlay = false;
+  if(vpWarmEl){ vpWarmEl.removeAttribute('src'); vpWarmEl.dataset.src = ''; vpWarmEl.load(); }
+  VP.video.pause();
+  VP.video.removeAttribute('src');
+  VP.video.load();
+  VP.overlay.classList.remove('visible');
+  if(document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
+  setTimeout(()=>{
+    VP.overlay.classList.remove('open','hide-ui','loading');
+    VP.overlay.setAttribute('aria-hidden','true');
+  }, 220);
+  // the project lightbox stays open behind the player
+  const lb = document.getElementById('project-lightbox');
+  document.body.style.overflow = (lb && lb.style.display === 'flex') ? 'hidden' : '';
+  if(vpHistoryPushed && !fromPopState){
+    vpHistoryPushed = false;
+    try{ history.back(); }catch(e){}
+  }
+  if(fromPopState) vpHistoryPushed = false;
+}
+
+/* ----- player events ----- */
+VP.center.addEventListener('click', e => { e.stopPropagation(); vpTogglePlay(); });
+VP.toggle.addEventListener('click', e => { e.stopPropagation(); vpTogglePlay(); });
+VP.prev.addEventListener('click', e => { e.stopPropagation(); vpPrev(); });
+VP.next.addEventListener('click', e => { e.stopPropagation(); vpNext(); });
+VP.back.addEventListener('click', e => { e.stopPropagation(); closeVideoPlayer(); });
+VP.close.addEventListener('click', e => { e.stopPropagation(); closeVideoPlayer(); });
+
+VP.mute.addEventListener('click', e => {
+  e.stopPropagation();
+  VP.video.muted = !VP.video.muted;
+  vpSetIcon(VP.muteIc, VP.video.muted ? ICON_MUTED : ICON_VOL);
+  vpShowUI();
+});
+VP.fsBtn.addEventListener('click', async e => {
+  e.stopPropagation();
   try{
-    const url = await uploadFile(file, pct => showUploadProgress(pct));
-    hideUploadProgress();
-    onDone(url);
-    statusEl.textContent = 'Uploaded — click "Save all changes" to publish.';
-  }catch(err){
-    hideUploadProgress();
-    const msg = /exceed|size|too large|413/i.test(err.message || '')
-      ? 'That file is too large — this plan\'s upload limit is 50MB.'
-      : ('Upload failed: ' + (err.message || err));
-    statusEl.textContent = msg;
+    if(document.fullscreenElement){ await document.exitFullscreen(); }
+    else if(VP.stage.requestFullscreen){ await VP.stage.requestFullscreen(); }
+    else if(VP.video.webkitEnterFullscreen){ VP.video.webkitEnterFullscreen(); } // iOS Safari
+  }catch(err){}
+  vpShowUI();
+});
+document.addEventListener('fullscreenchange', ()=>{
+  vpSetIcon(document.getElementById('vp-fs-icon'), document.fullscreenElement ? ICON_FSX : ICON_FS);
+});
+
+VP.video.addEventListener('loadedmetadata', ()=>{
+  VP.duration.textContent = vpFmt(VP.video.duration);
+  VP.overlay.classList.remove('loading');
+});
+VP.video.addEventListener('waiting', ()=> VP.overlay.classList.add('loading'));
+VP.video.addEventListener('playing', ()=>{ VP.overlay.classList.remove('loading'); vpSyncPlayIcons(); vpShowUI(); });
+VP.video.addEventListener('play', vpSyncPlayIcons);
+VP.video.addEventListener('pause', ()=>{ vpSyncPlayIcons(); VP.overlay.classList.remove('hide-ui'); });
+VP.video.addEventListener('ended', ()=>{
+  vpSyncPlayIcons();
+  VP.overlay.classList.remove('hide-ui');
+  if(vpIndex < vpPlaylist.length - 1) vpNext();
+});
+VP.video.addEventListener('timeupdate', ()=>{
+  if(vpDragging || !VP.video.duration) return;
+  const pct = (VP.video.currentTime / VP.video.duration) * 100;
+  VP.fill.style.width = pct + '%';
+  VP.knob.style.left = pct + '%';
+  VP.current.textContent = vpFmt(VP.video.currentTime);
+});
+VP.video.addEventListener('progress', ()=>{
+  if(VP.video.buffered.length && VP.video.duration){
+    const end = VP.video.buffered.end(VP.video.buffered.length - 1);
+    VP.buffer.style.width = (end / VP.video.duration) * 100 + '%';
+  }
+});
+
+/* tap the video area: toggle the control overlay */
+VP.stage.addEventListener('click', e => {
+  if(e.target.closest('.vp-top, .vp-bottom, .vp-center')) return;
+  if(VP.overlay.classList.contains('hide-ui')) vpShowUI();
+  else VP.overlay.classList.add('hide-ui');
+});
+VP.stage.addEventListener('mousemove', vpShowUI);
+
+/* scrubbing */
+function vpSeekTo(clientX){
+  const rect = VP.seek.getBoundingClientRect();
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  if(VP.video.duration){
+    VP.video.currentTime = ratio * VP.video.duration;
+    VP.current.textContent = vpFmt(VP.video.currentTime);
+  }
+  VP.fill.style.width = ratio * 100 + '%';
+  VP.knob.style.left = ratio * 100 + '%';
+}
+function vpDragStart(e){
+  vpDragging = true;
+  VP.seek.classList.add('dragging');
+  vpSeekTo(e.touches ? e.touches[0].clientX : e.clientX);
+  e.preventDefault();
+}
+function vpDragMove(e){
+  if(!vpDragging) return;
+  vpSeekTo(e.touches ? e.touches[0].clientX : e.clientX);
+}
+function vpDragEnd(){
+  if(!vpDragging) return;
+  vpDragging = false;
+  VP.seek.classList.remove('dragging');
+  vpShowUI();
+}
+VP.seek.addEventListener('mousedown', vpDragStart);
+VP.seek.addEventListener('touchstart', vpDragStart, { passive:false });
+window.addEventListener('mousemove', vpDragMove);
+window.addEventListener('touchmove', vpDragMove, { passive:true });
+window.addEventListener('mouseup', vpDragEnd);
+window.addEventListener('touchend', vpDragEnd);
+
+/* hardware / browser back button closes the player first */
+window.addEventListener('popstate', ()=>{
+  if(VP.overlay.classList.contains('open')) closeVideoPlayer(true);
+});
+
+/* keyboard shortcuts while the player is open */
+document.addEventListener('keydown', e => {
+  if(!VP.overlay.classList.contains('open')) return;
+  if(e.key === ' ' || e.key === 'k'){ e.preventDefault(); vpTogglePlay(); }
+  else if(e.key === 'ArrowRight'){ VP.video.currentTime = Math.min(VP.video.duration || 0, VP.video.currentTime + 5); vpShowUI(); }
+  else if(e.key === 'ArrowLeft'){ VP.video.currentTime = Math.max(0, VP.video.currentTime - 5); vpShowUI(); }
+  else if(e.key === 'm'){ VP.mute.click(); }
+  else if(e.key === 'f'){ VP.fsBtn.click(); }
+  else if(e.key === 'Escape'){ e.stopPropagation(); closeVideoPlayer(); }
+}, true);
+
+/* ---------- project media lightbox ---------- */
+function openProjectMedia(i, opts){
+  opts = opts || {};
+  const p = currentProjects[i];
+  if(!p) return;
+  const mediaItems = [p.col1a, p.col1b, p.col2].filter(Boolean);
+  const mediaHtml = mediaItems.map((url, idx) => `
+    <div class="lightbox-media-item" style="animation-delay:${idx * 0.08}s;">${mediaTagPlayable(url, p.name)}</div>
+  `).join('');
+
+  const groups = (p.mediaGroups || []).filter(g => g.items && g.items.length);
+  const groupsHtml = groups.map(g => `
+    <div class="lightbox-group" style="--group-color:${g.color || '#4F46E5'};">
+      <div class="lightbox-group-title">${g.name}</div>
+      <div class="lightbox-media-grid">
+        ${g.items.map((url, idx) => `<div class="lightbox-media-item" style="animation-delay:${idx * 0.08}s;">${mediaTagPlayable(url, g.name)}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  const files = (p.files || []);
+  const filesHtml = files.length ? `
+    <div class="lightbox-group">
+      <div class="lightbox-group-title">Documents</div>
+      <div class="lightbox-files">
+        ${files.map(f => `
+          <a href="${f.url}" target="_blank" class="lightbox-file-link">
+            <span class="file-icon">📄</span> ${f.name || 'Download file'}
+          </a>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const noMediaHtml = (!mediaItems.length && !groups.length && !files.length)
+    ? `<p style="opacity:.5; text-align:center;">No media uploaded for this project yet.</p>`
+    : '';
+
+  const audioHtml = p.audioUrl
+    ? `<audio controls controlslist="nodownload noplaybackrate" oncontextmenu="return false;" src="${p.audioUrl}" style="width:100%; margin-top:1rem;"></audio>`
+    : '';
+  const liveLinkHtml = (p.liveUrl && p.liveUrl !== '#')
+    ? `<a href="${p.liveUrl}" target="_blank" class="btn-contact" style="display:inline-block; margin-top:1.5rem;">Visit Live Site</a>`
+    : '';
+
+  document.getElementById('lightbox-title').textContent = p.name;
+  document.getElementById('lightbox-category').textContent = p.category;
+  document.getElementById('lightbox-desc').textContent = p.desc;
+  document.getElementById('lightbox-media').innerHTML = mediaHtml + noMediaHtml;
+  document.getElementById('lightbox-groups').innerHTML = groupsHtml + filesHtml;
+  document.getElementById('lightbox-audio').innerHTML = audioHtml;
+  document.getElementById('lightbox-live-link').innerHTML = liveLinkHtml;
+  document.getElementById('project-lightbox').style.display = 'flex';
+  document.getElementById('project-lightbox').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+
+  /* give every project its own shareable address: yoursite/#project/<slug> */
+  openSlug = projectSlugMap.get(p) || '';
+  if(openSlug){
+    const target = '#project/' + openSlug;
+    try{
+      if(opts.fromHash){ lbPushed = false; }
+      else if(location.hash !== target){ history.pushState({ lb:true }, '', target); lbPushed = true; }
+    }catch(e){}
+  }
+}
+function closeProjectMedia(fromPop){
+  const lb = document.getElementById('project-lightbox');
+  const wasOpen = lb.style.display === 'flex';
+  let steps = 0;
+  if(document.getElementById('video-player').classList.contains('open')){
+    if(vpHistoryPushed) steps++;
+    closeVideoPlayer(true);            // history is unwound together with the project entry below
+  }
+  lb.style.display = 'none';
+  document.body.style.overflow = '';
+  document.getElementById('lightbox-media').innerHTML = '';
+  document.getElementById('lightbox-groups').innerHTML = '';
+  document.getElementById('lightbox-audio').innerHTML = '';
+  openSlug = '';
+  if(fromPop === true){ lbPushed = false; return; }
+  if(wasOpen){
+    try{
+      if(lbPushed){ steps++; lbPushed = false; }
+      if(steps) history.go(-steps);
+      else if(/^#project\//.test(location.hash)){
+        history.replaceState(null, '', location.pathname + location.search);   // landed on a shared link
+      }
+    }catch(e){}
   }
 }
 
-/* ---------- home video ---------- */
-function renderHomeVideo(){
-  document.getElementById('home-video-preview').innerHTML = state.homeVideo
-    ? `<video src="${state.homeVideo}" controls style="width:100%; max-width:420px; border-radius:10px; display:block; margin-bottom:.5rem;"></video>`
-    : `<p style="opacity:.5; font-size:.85rem;">No video uploaded yet.</p>`;
+/* ---------- per-project share links ---------- */
+let openSlug = '';
+let lbPushed = false;
+let projectSlugMap = new Map();
+function slugify(str){
+  return String(str || '').toLowerCase().replace(/&/g,' and ')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
-async function handleHomeVideo(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => { state.homeVideo = url; renderHomeVideo(); });
-}
-function removeHomeVideo(){ state.homeVideo = ''; renderHomeVideo(); }
-
-/* ---------- nav ---------- */
-function renderNav(){
-  document.getElementById('nav-list').innerHTML = state.nav.map((n,i)=>`
-    <div class="card row">
-      <div><label>Label</label><input type="text" value="${escAttr(n.label)}" onchange="state.nav[${i}].label=this.value"></div>
-      <div><label>Link (e.g. #about)</label><input type="text" value="${escAttr(n.href)}" onchange="state.nav[${i}].href=this.value"></div>
-      <div style="flex:none; align-self:flex-end;"><button class="danger" onclick="removeNav(${i})">Delete</button></div>
-    </div>
-  `).join('');
-}
-function addNav(){ state.nav.push({label:'New Link', href:'#'}); renderNav(); }
-function removeNav(i){ state.nav.splice(i,1); renderNav(); }
-
-/* ---------- gallery ---------- */
-function renderGallery(){
-  document.getElementById('gallery-list').innerHTML = state.gallery.map((url,i)=>`
-    <div class="img-slot">
-      ${mediaPreview(url)}
-      <input type="file" accept="image/*" onchange="handleGalleryImage(event, ${i})">
-      <button class="danger" onclick="removeGalleryImage(${i})">Delete</button>
-    </div>
-  `).join('');
-}
-function addGalleryImage(){ state.gallery.push(''); renderGallery(); }
-function removeGalleryImage(i){ state.gallery.splice(i,1); renderGallery(); }
-async function handleGalleryImage(e, i){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => { state.gallery[i] = url; renderGallery(); });
-}
-
-/* ---------- services ---------- */
-function renderServices(){
-  document.getElementById('services-list').innerHTML = state.services.map((s,i)=>`
-    <div class="card">
-      <label>Name</label>
-      <input type="text" value="${escAttr(s.name)}" onchange="state.services[${i}].name=this.value">
-      <label>Description</label>
-      <textarea onchange="state.services[${i}].desc=this.value">${escHtml(s.desc)}</textarea>
-      <div class="card-actions"><button class="danger" onclick="removeService(${i})">Delete</button></div>
-    </div>
-  `).join('');
-}
-function addService(){ state.services.push({num:'', name:'New Service', desc:''}); renderServices(); }
-function removeService(i){ state.services.splice(i,1); renderServices(); }
-
-/* ---------- projects ---------- */
-function renderProjects(){
-  document.getElementById('projects-list').innerHTML = state.projects.map((p,i)=>`
-    <div class="card">
-      <div class="row">
-        <div><label>Category</label><input type="text" value="${escAttr(p.category)}" onchange="state.projects[${i}].category=this.value"></div>
-        <div><label>Name</label><input type="text" value="${escAttr(p.name)}" onchange="state.projects[${i}].name=this.value"></div>
-      </div>
-      <label>Description</label>
-      <textarea onchange="state.projects[${i}].desc=this.value">${escHtml(p.desc)}</textarea>
-      <label>External site link (optional — shown as "Visit Live Site" inside the media viewer)</label>
-      <input type="text" value="${escAttr(p.liveUrl)}" placeholder="https://..." onchange="state.projects[${i}].liveUrl=this.value">
-      <label>Images or videos (clicking the project on the live site opens all of these, playable)</label>
-      ${['col1a','col1b','col2'].map(key=>`
-        <div class="img-slot">
-          ${mediaPreview(p[key])}
-          <input type="file" accept="image/*,video/*" onchange="handleProjectImage(event, ${i}, '${key}')">
-        </div>
-      `).join('')}
-      <label>Audio (optional)</label>
-      <div class="img-slot">
-        ${p.audioUrl ? `<audio src="${p.audioUrl}" controls style="height:32px;"></audio>` : `<span style="opacity:.5; font-size:.8rem;">No audio uploaded</span>`}
-        <input type="file" accept="audio/*" onchange="handleProjectAudio(event, ${i})">
-      </div>
-      <label>Categories (e.g. "Social Media Video", "Motion Graphics", "Ads Video" — shown grouped when someone opens this project)</label>
-      ${renderGroups(i)}
-      <button class="secondary" onclick="addGroup(${i})">+ Add category</button>
-
-      <label>Documents (PDF, etc. — shown as downloadable links)</label>
-      ${renderFiles(i)}
-      <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" onchange="handleProjectFile(event, ${i})">
-      <div class="card-actions">
-        <button class="secondary" onclick="moveProject(${i}, -1)" ${i===0 ? 'disabled style="opacity:.3;"' : ''}>↑ Move up</button>
-        <button class="secondary" onclick="moveProject(${i}, 1)" ${i===state.projects.length-1 ? 'disabled style="opacity:.3;"' : ''}>↓ Move down</button>
-        <button class="danger" onclick="removeProject(${i})">Delete project</button>
-      </div>
-    </div>
-  `).join('');
-}
-function renderGroups(pi){
-  const groups = state.projects[pi].mediaGroups || (state.projects[pi].mediaGroups = []);
-  return groups.map((g,gi)=>`
-    <div class="card" style="background:#0c0b12; margin-top:.5rem; border-left:3px solid ${g.color || '#4F46E5'};">
-      <div class="row">
-        <input type="text" placeholder="Category name" value="${escAttr(g.name)}"
-          onchange="state.projects[${pi}].mediaGroups[${gi}].name=this.value">
-        <div style="flex:none; display:flex; align-items:center; gap:.5rem;">
-          <label style="margin:0; font-size:.75rem;">Color</label>
-          <input type="color" value="${g.color || '#4F46E5'}" style="width:36px; height:36px; padding:0; border:none; background:none;"
-            onchange="state.projects[${pi}].mediaGroups[${gi}].color=this.value; renderProjects();">
-        </div>
-        <div style="flex:none;"><button class="danger" onclick="removeGroup(${pi},${gi})">Delete category</button></div>
-      </div>
-      ${(g.items||[]).map((url,ii)=>`
-        <div class="img-slot">
-          ${mediaPreview(url)}
-          <span style="flex:1; font-size:.75rem; opacity:.6; word-break:break-all;">item ${ii+1}</span>
-          <button class="danger" onclick="removeGroupItem(${pi},${gi},${ii})">Delete</button>
-        </div>
-      `).join('')}
-      <label>Add image or video to this category</label>
-      <input type="file" accept="image/*,video/*" onchange="handleGroupItemUpload(event, ${pi}, ${gi})">
-    </div>
-  `).join('');
-}
-function addGroup(pi){
-  if(!state.projects[pi].mediaGroups) state.projects[pi].mediaGroups = [];
-  const palette = ['#4F46E5','#DB2777','#059669','#D97706','#2563EB','#7C3AED'];
-  const color = palette[state.projects[pi].mediaGroups.length % palette.length];
-  state.projects[pi].mediaGroups.push({name:'New Category', color, items:[]});
-  renderProjects();
-}
-function removeGroup(pi, gi){
-  state.projects[pi].mediaGroups.splice(gi,1);
-  renderProjects();
-}
-function removeGroupItem(pi, gi, ii){
-  state.projects[pi].mediaGroups[gi].items.splice(ii,1);
-  renderProjects();
-}
-async function handleGroupItemUpload(e, pi, gi){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => {
-    state.projects[pi].mediaGroups[gi].items.push(url);
-    renderProjects();
+function buildProjectSlugs(){
+  projectSlugMap = new Map();
+  const seen = {};
+  allProjects.forEach((p, idx)=>{
+    const base = slugify(p.name) || ('project-' + (idx + 1));
+    let slug = base, n = 2;
+    while(seen[slug]) slug = base + '-' + (n++);
+    seen[slug] = true;
+    projectSlugMap.set(p, slug);
   });
 }
+function projectShareUrl(slug){
+  return location.origin + location.pathname + location.search + '#project/' + slug;
+}
+function openProjectBySlug(slug){
+  const p = allProjects.find(x => projectSlugMap.get(x) === slug);
+  if(!p) return false;
+  if(activeFilter !== 'All') filterProjects('All');
+  const idx = currentProjects.indexOf(p);
+  if(idx < 0) return false;
+  openProjectMedia(idx, { fromHash:true });
+  return true;
+}
+function routeFromHash(){
+  const m = location.hash.match(/^#project\/(.+)$/);
+  if(!m) return;
+  let slug = m[1];
+  try{ slug = decodeURIComponent(slug); }catch(e){}
+  if(slug === openSlug) return;
+  if(!openProjectBySlug(slug)){
+    const el = document.getElementById('portfolio');
+    if(el) el.scrollIntoView();
+  }
+}
+async function copyProjectLink(){
+  if(!openSlug) return;
+  const url = projectShareUrl(openSlug);
+  const btn = document.getElementById('lightbox-copy');
+  let ok = false;
+  try{ await navigator.clipboard.writeText(url); ok = true; }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand('copy'); }catch(err){}
+    ta.remove();
+  }
+  btn.textContent = ok ? '✓ Link copied' : url;
+  btn.classList.toggle('copied', ok);
+  setTimeout(()=>{ btn.textContent = '🔗 Copy link'; btn.classList.remove('copied'); }, 2200);
+}
+window.addEventListener('popstate', ()=>{
+  const lb = document.getElementById('project-lightbox');
+  if(lb.style.display === 'flex' && !/^#project\//.test(location.hash)) closeProjectMedia(true);
+  else routeFromHash();
+});
+window.addEventListener('hashchange', routeFromHash);
 
-/* ---------- documents (PDF etc.) ---------- */
-function renderFiles(pi){
-  const files = state.projects[pi].files || (state.projects[pi].files = []);
-  return files.map((f,fi)=>`
-    <div class="img-slot">
-      <span style="flex:1; font-size:.8rem;">📄 ${escHtml(f.name)}</span>
-      <button class="danger" onclick="removeProjectFile(${pi},${fi})">Delete</button>
-    </div>
-  `).join('');
+function updateProjectScale(){
+  for(let i=0;i<totalCards;i++){
+    const container = stackEl.children[i];
+    const card = document.getElementById(`proj-card-${i}`);
+    const rect = container.getBoundingClientRect();
+    const progress = Math.min(1, Math.max(0, -rect.top / rect.height));
+    const targetScale = 1 - (totalCards - 1 - i) * 0.03;
+    const scale = 1 - progress * (1 - targetScale);
+    card.style.transform = `scale(${scale})`;
+  }
 }
-function removeProjectFile(pi, fi){
-  state.projects[pi].files.splice(fi,1);
-  renderProjects();
-}
-async function handleProjectFile(e, pi){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => {
-    if(!state.projects[pi].files) state.projects[pi].files = [];
-    state.projects[pi].files.push({ name: file.name, url });
-    renderProjects();
-  });
-}
+window.addEventListener('scroll', updateProjectScale, { passive:true });
+window.addEventListener('resize', updateProjectScale);
 
-function addProject(){
-  state.projects.push({num:'', category:'', name:'New Project', desc:'', liveUrl:'', audioUrl:'', mediaGroups:[], files:[], col1a:'', col1b:'', col2:''});
-  renderProjects();
-}
-async function handleProjectAudio(e, i){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => { state.projects[i].audioUrl = url; renderProjects(); });
-}
-function removeProject(i){ state.projects.splice(i,1); renderProjects(); }
-function moveProject(i, dir){
-  const j = i + dir;
-  if(j < 0 || j >= state.projects.length) return;
-  [state.projects[i], state.projects[j]] = [state.projects[j], state.projects[i]];
-  renderProjects();
-}
-async function handleProjectImage(e, i, key){
-  const file = e.target.files[0];
-  if(!file) return;
-  await runUpload(file, url => { state.projects[i][key] = url; renderProjects(); });
-}
+async function loadContent(){
+  let services = servicesDefault;
+  let projects = projectsDefault;
+  let gallery = galleryDefault;
+  let nav = null, hero = null, about = null, contact = null, footer = null, data_homeVideo = null;
+  try{
+    const { data } = await supabaseClient.from('content').select('*').eq('id', 1).single();
+    if(data){
+      if(data.services && data.services.length) services = data.services;
+      if(data.projects && data.projects.length) projects = data.projects;
+      if(data.gallery && data.gallery.length) gallery = data.gallery;
+      nav = data.nav; hero = data.hero; about = data.about; contact = data.contact; footer = data.footer;
+      data_homeVideo = data.home_video;
+    }
+  }catch(e){ /* Supabase not set up yet, or table empty — using defaults */ }
 
-/* ---------- contact ---------- */
-function renderPhones(){
-  document.getElementById('phones-list').innerHTML = state.contact.phones.map((p,i)=>`
-    <div class="row">
-      <input type="text" value="${escAttr(p)}" onchange="state.contact.phones[${i}]=this.value">
-      <div style="flex:none;"><button class="danger" onclick="removePhone(${i})">Delete</button></div>
-    </div>
-  `).join('');
+  renderGallery(gallery);
+  updateMarquee();
+
+  if(nav && nav.length){
+    document.getElementById('navbar-links').innerHTML = nav.map(n=>`<a href="${n.href}">${n.label}</a>`).join('');
+  }
+  if(hero){
+    if(hero.heading) document.getElementById('hero-heading-el').textContent = hero.heading;
+    if(hero.tagline) document.getElementById('hero-tagline-el').textContent = hero.tagline;
+  }
+  if(data_homeVideo){
+    document.getElementById('home-video').src = data_homeVideo;
+    document.getElementById('home-video-section').style.display = 'block';
+  }
+  if(footer){
+    document.getElementById('site-footer').textContent = footer;
+  }
+  if(contact){
+    if(contact.email){
+      const emailLink = document.getElementById('contact-email-link');
+      emailLink.href = 'mailto:' + contact.email;
+      emailLink.textContent = contact.email;
+      document.getElementById('contact-email-btn').onclick = () => window.location.href = 'mailto:' + contact.email;
+    }
+    if(contact.phones && contact.phones.length){
+      document.getElementById('contact-phones').innerHTML =
+        contact.phones.map(p=>`<a href="tel:${p.replace(/\s/g,'')}" class="contact-link">${p}</a>`).join('');
+    }
+    if(contact.socials && contact.socials.length){
+      document.getElementById('contact-socials-list').innerHTML =
+        contact.socials.map(s=>`<a href="${s.url}" class="social-link">${s.label}</a>`).join('');
+    }
+  }
+  if(about){
+    aboutCopyEl.textContent = about;
+  }
+
+  renderServices(services);
+  allProjects = projects;
+  buildProjectSlugs();
+  activeFilter = 'All';
+  renderFilters();
+  renderProjects(projects);
+  updateProjectScale();
+  initAboutAnimation();
+  routeFromHash();     // a shared #project/... link opens that project straight away
 }
-function addPhone(){ state.contact.phones.push('+251'); renderPhones(); }
-function removePhone(i){ state.contact.phones.splice(i,1); renderPhones(); }
+loadContent();
 
-function renderSocials(){
-  document.getElementById('socials-list').innerHTML = state.contact.socials.map((s,i)=>`
-    <div class="row">
-      <input type="text" placeholder="Label" value="${escAttr(s.label)}" onchange="state.contact.socials[${i}].label=this.value">
-      <input type="text" placeholder="URL" value="${escAttr(s.url)}" onchange="state.contact.socials[${i}].url=this.value">
-      <div style="flex:none;"><button class="danger" onclick="removeSocial(${i})">Delete</button></div>
-    </div>
-  `).join('');
-}
-function addSocial(){ state.contact.socials.push({label:'New', url:'#'}); renderSocials(); }
-function removeSocial(i){ state.contact.socials.splice(i,1); renderSocials(); }
+/* close lightbox with Escape key (the video player handles Escape itself) */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && !document.getElementById('video-player').classList.contains('open')){
+    closeProjectMedia();
+  }
+});
 
-/* ---------- save ---------- */
-async function save(){
-  const statusEl = document.getElementById('status');
-  state.hero.heading = document.getElementById('hero-heading').value;
-  state.hero.tagline = document.getElementById('hero-tagline').value;
-  state.about = document.getElementById('about-text').value;
-  state.contact.email = document.getElementById('contact-email').value;
-  state.footer = document.getElementById('footer-text').value;
+/* back-to-top button visibility */
+const backToTopBtn = document.getElementById('back-to-top');
+window.addEventListener('scroll', ()=>{
+  backToTopBtn.classList.toggle('visible', window.scrollY > 600);
+}, { passive:true });
 
-  state.services.forEach((s,i)=> s.num = String(i+1).padStart(2,'0'));
-  state.projects.forEach((p,i)=> p.num = String(i+1).padStart(2,'0'));
+/* delegated smooth scroll — works even after nav links are replaced above */
+document.addEventListener('click', (e)=>{
+  const a = e.target.closest('.navbar a');
+  if(!a) return;
+  const id = a.getAttribute('href');
+  if(id && id.startsWith('#')){
+    const target = document.querySelector(id);
+    if(target){
+      e.preventDefault();
+      target.scrollIntoView({ behavior:'smooth' });
+    }
+  }
+});
 
-  statusEl.textContent = 'Saving...';
-  const { error } = await supabaseClient.from('content').update({
-    nav: state.nav, hero: state.hero, home_video: state.homeVideo, about: state.about, gallery: state.gallery,
-    services: state.services, projects: state.projects,
-    contact: state.contact, footer: state.footer
-  }).eq('id', 1);
-  statusEl.textContent = error ? error.message : 'Saved. Refresh your site to see the changes.';
-}
+/* =========================================================
+   7. PORTRAIT CHROMA KEY — remove black video background in
+      real time by drawing frames to a canvas and zeroing
+      alpha on near-black pixels, so only the face/hair shows.
+   ========================================================= */
+(function () {
+  const video = document.getElementById('portrait-video');
+  const canvas = document.getElementById('portrait-canvas');
+  if (!video || !canvas) return;
 
-/* ---------- helpers ---------- */
-function escAttr(str){ return (str||'').replace(/"/g,'&quot;'); }
-function escHtml(str){ return (str||'').replace(/</g,'&lt;'); }
-function isVideoUrl(url){ return /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url || ''); }
-function mediaPreview(url){
-  if(!url) return `<div style="width:56px;height:56px;border-radius:6px;background:#222;flex:none;"></div>`;
-  return isVideoUrl(url)
-    ? `<video src="${url}" muted style="width:56px;height:56px;object-fit:cover;border-radius:6px;background:#222;flex:none;"></video>`
-    : `<img src="${url}" onerror="this.style.visibility='hidden'">`;
-}
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const THRESHOLD = 38;
+  const FEATHER = 28;
+
+  function resizeCanvas() {
+    const w = video.videoWidth || 700;
+    const h = video.videoHeight || 700;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+
+  function drawFrame() {
+    if (video.readyState >= 2) {
+      resizeCanvas();
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = frame.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const brightness = Math.max(r, g, b);
+        if (brightness <= THRESHOLD) {
+          data[i + 3] = 0;
+        } else if (brightness < THRESHOLD + FEATHER) {
+          data[i + 3] = Math.round(((brightness - THRESHOLD) / FEATHER) * 255);
+        }
+      }
+      ctx.putImageData(frame, 0, 0);
+    }
+    requestAnimationFrame(drawFrame);
+  }
+
+  video.addEventListener('loadedmetadata', resizeCanvas);
+  requestAnimationFrame(drawFrame);
+})();
+
 </script>
 </body>
 </html>
